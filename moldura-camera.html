@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>kalibxd_ · Moldura da Câmera</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Sedgwick+Ave+Display&display=swap" rel="stylesheet">
+<!--
+  ================================================================
+   KALIBXD_ · MOLDURA DA CÂMERA  -  fonte "Navegador" do OBS
+  ================================================================
+   Moldura de cria, carioca: borda nas cores da bandeira (verde por
+   fora, filete amarelo e o miolo azul com as estrelinhas do céu da
+   bandeira), plaquinha com o nome em letra de pichação, morrinho
+   com casinhas, caixa d'água na laje e a bandeira do Brasil
+   tremulando, pipas com rabiola, vira-lata caramelo de bandana,
+   caixa de som batendo o grave e adesivos 021.
+
+   De tempos em tempos tem GRAU: ela passa empinando a moto, de
+   camisa da seleção e Juliet, pula a plaquinha e dá um mortal por
+   cima do caramelo. A plaquinha pula, cai confete verde e amarelo,
+   o caramelo late e as pipas dão volta. E de vez em quando pipoca
+   um balãozinho com gíria carioca.
+
+   DOIS MODELOS
+     ?tela=valorant   a tela do jogo: câmera na esquerda, encostada
+                      na beirada (o padrão). A fonte cobre a tela toda.
+     ?solta           só a câmera, com borda em volta toda: a fonte é a
+                      câmera + uma margem pros enfeites. Agrupe com a
+                      webcam no OBS e mova as duas juntas.
+
+   COMO COLOCAR NO OBS (tela do Valorant)
+     1. Fontes -> + -> Navegador
+     2. URL: o link desta página, ex.: ?tela=valorant
+     3. Largura e altura = tamanho da tela do OBS (1920 x 1080).
+        A moldura cai sozinha em volta da câmera.
+     4. Deixe a moldura ACIMA da câmera na lista de fontes.
+
+   OPÇÕES NO LINK (junte com &)
+     ?tela=valorant            a tela do jogo (o padrão)
+     ?solta                    modelo só da câmera (usa só largura/altura)
+     ?x=0&y=538                canto de cima-esquerdo da câmera, em pixels da tela
+     ?largura=387&altura=217   tamanho da câmera
+     ?resolucao=1280x720       tamanho da tela do OBS, se não for 1920x1080
+     ?nome=Kali                texto da plaquinha (?nome= esconde)
+     ?pipas=6                  quantas pipas voando (0 a 300; 0 = sem pipas)
+     ?velocidade=0.6           velocidade das pipas (1 = o padrão, 2 = rápido)
+     ?grau=40                  segundos entre um grau e outro (0 = desliga)
+     ?moto=0                   grau sem a moto (só a festa)
+     ?morro=0                  sem o morrinho (e a bandeira)
+     ?caramelo=0               sem o vira-lata caramelo
+     ?som=0                    sem a caixa de som
+     ?adesivos=0               sem os adesivos
+     ?girias=0                 sem os balõezinhos de gíria
+     ?girias=COÉ,PAPO RETO     troca as gírias (separe com vírgula)
+     ?zoom                     só na prévia: mostra a moldura de pertinho
+
+   Abrindo no navegador aparece um fundo de exemplo, com o HUD do
+   Valorant de mentirinha no lugar (clique em qualquer lugar pra
+   fazer o grau). Dentro do OBS o fundo fica transparente.
+  ================================================================
+-->
+<script>
+const CONFIG = {
+  nome: "kalibxd_",              // texto na plaquinha ("" = esconde)  ·  link: ?nome=Kali
+  fonte: "Sedgwick Ave Display", // letra de pichação do nome e dos balões (Google Fonts, no <link> lá em cima)
+  fonteAdesivo: "Bungee",        // letra dos adesivos
+
+  tela: { largura: 1920, altura: 1080 },   // tela do OBS em que as medidas abaixo valem
+  telas: {                                 // medida da live: câmera encostada na esquerda, cantos arredondados  ·  link: ?tela=valorant
+    valorant: { cam: { x: 0, y: 538, largura: 387, altura: 217 }, arranjo: "esquerda" },
+  },
+  telaPadrao: "valorant",
+  solta: { largura: 385, altura: 217 },    // câmera padrão do modelo solto  ·  link: ?solta&largura=&altura=
+
+  pipas: 4,                      // quantas pipas voando  ·  link: ?pipas=6
+  velocidade: 1,                 // velocidade delas: 2 = rápido, 0.5 = bem devagar  ·  link: ?velocidade=0.6
+  grau: 30,                      // segundos entre um grau e outro, 0 = desliga  ·  link: ?grau=40
+  moto: true,                    // no grau ela passa empinando a moto  ·  link: ?moto=0
+  morro: true,                   // morrinho com a bandeira  ·  link: ?morro=0
+  caramelo: true,                // vira-lata caramelo sentado na quina  ·  link: ?caramelo=0
+  som: true,                     // caixa de som batendo o grave  ·  link: ?som=0
+  adesivos: true,                // adesivos 021 e coração na borda  ·  link: ?adesivos=0
+  girias: ["COÉ!", "MERMÃO", "CARACA!", "PAPO RETO", "SINISTRO!", "É O 021", "TÁ LIGADO?", "DEMORÔ!", "QUE ISSO?!", "SE LIGA!", "PARTIU!", "BRABO!"],
+  giriasCada: 15,                // segundos entre um balãozinho e outro  ·  link: ?girias=0 desliga
+
+  borda: 13,                     // grossura da borda (numa câmera de 400 de largura; cresce junto com ela)
+  raio: 32,                      // cantos arredondados (a câmera dela tem canto redondo)
+  bpm: 130,                      // batida da caixa de som
+
+  cores: {
+    verde: "#00a651", verdeClaro: "#62e394", verdeEscuro: "#006b34",
+    amarelo: "#ffd21f", amareloClaro: "#fff5a8", amareloEscuro: "#e3a300",
+    azul: "#1f47b8", azulClaro: "#6f93ff", azulEscuro: "#0c2365",
+    laranja: "#f07a2a",          // o laranja do timer dela
+    rosa: "#ff5fa2",
+    contorno: "#0b1510",         // quase preto dos contornos
+  },
+
+  fundoDemo: "auto",             // "auto" = fundo de exemplo só fora do OBS · true / false força
+};
+</script>
+
+<style>
+  * { box-sizing:border-box; }
+  html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:transparent; }
+  body.demo { background:#101318; cursor:pointer; }
+
+  .palco { position:absolute; left:0; top:0; transform-origin:0 0; overflow:hidden; }
+  .palco > svg, .palco > canvas { position:absolute; display:block; overflow:visible; }
+
+  /* ---------- prévia (só fora do OBS) ---------- */
+  .demo-only { display:none; }
+  body.demo .palco {
+    background:
+      linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,0) 32%, rgba(0,0,0,.34)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.028) 0 140px, rgba(0,0,0,.05) 140px 280px),
+      linear-gradient(160deg, #6a6056 0%, #463f38 45%, #25272c 100%);
+  }
+  body.demo .demo-only { display:flex; }
+  .cam-box {
+    position:absolute; align-items:center; justify-content:center; overflow:hidden;
+    background:repeating-linear-gradient(135deg, rgba(255,255,255,.06) 0 14px, transparent 14px 28px), linear-gradient(160deg, #2f7d57, #1c3f7a);
+    color:rgba(255,245,168,.55); font:700 26px 'Segoe UI', Arial, sans-serif; letter-spacing:3px; text-transform:uppercase;
+  }
+  .hud { position:absolute; background:rgba(10,12,16,.5); border:2px solid rgba(255,255,255,.26); border-radius:6px;
+         align-items:center; justify-content:center; text-align:center;
+         color:rgba(255,255,255,.72); font:600 18px 'Segoe UI', Arial, sans-serif; padding:4px; }
+  .hud.timer { background:#fff; border:0; border-radius:14px; color:#e8702a; font:800 56px 'Segoe UI', Arial, sans-serif; }
+  .hud.meta { background:#f5c542; border:0; border-radius:14px; color:#5a3a1a; font:700 24px 'Segoe UI', Arial, sans-serif; }
+  .hud.texto { background:none; border:0; justify-content:flex-start; color:#fff; font:800 34px 'Segoe UI', Arial, sans-serif; }
+  .hud.mapa { border-radius:50%; background:rgba(170,180,190,.1); border:2px solid rgba(255,255,255,.3); }
+  .dica { position:absolute; left:600px; top:130px; flex-direction:column; gap:10px;
+          color:rgba(255,255,255,.66); font:600 28px 'Segoe UI', Arial, sans-serif; }
+  .dica b { color:#ffd21f; font:400 44px 'Sedgwick Ave Display', 'Segoe UI', sans-serif; text-transform:uppercase; }
+  .dica.fixa { position:fixed; left:16px; top:12px; gap:2px; font-size:15px; z-index:5; }
+  .dica.fixa b { font-size:22px; }
+
+  /* ---------- enfeites (SVG) ---------- */
+  .pop, .placa, .balao { transform-box:fill-box; transform-origin:50% 50%; }
+  .balao { transform-origin:50% 100%; }
+  .pisca   { transform-box:fill-box; transform-origin:50% 50%; opacity:0; animation:pisca var(--t) ease-in-out var(--d) infinite; }
+  .cintila { transform-box:fill-box; transform-origin:50% 50%; animation:cintila var(--t) ease-in-out var(--d) infinite; }
+  .brilho-borda { animation:corre var(--t) linear infinite; }
+  .reflexo { transform-box:fill-box; transform-origin:50% 50%; animation:reflexo 6s ease-in-out 1s infinite; }
+
+  /* morrinho: janelas acendendo e apagando */
+  .janela { animation:janela var(--t) steps(1) var(--d) infinite; }
+  .luz { animation:luz var(--t) ease-in-out var(--d) infinite alternate; }
+  .grau .janela { animation-duration:.5s; }
+
+  /* caramelo */
+  .rabo { transform-box:fill-box; transform-origin:0% 100%; animation:abana .26s ease-in-out infinite alternate; }
+  .orelha-e { transform-box:fill-box; transform-origin:80% 95%; animation:orelha 5.2s ease-in-out infinite; }
+  .orelha-d { transform-box:fill-box; transform-origin:20% 95%; animation:orelha2 6.4s ease-in-out 1.3s infinite; }
+  .olhos  { transform-box:fill-box; transform-origin:50% 50%; animation:olho 4.6s linear infinite; }
+  .lingua { transform-box:fill-box; transform-origin:50% 0%; animation:ofega .34s ease-in-out infinite alternate; }
+  .cabeca { transform-box:fill-box; transform-origin:50% 90%; animation:inclina 7.5s ease-in-out infinite; }
+  .late .cabeca { animation:latido .2s ease-out 4; }
+  .late .rabo { animation-duration:.1s; }
+
+  /* caixa de som */
+  .woofer { transform-box:fill-box; transform-origin:50% 50%; animation:grave var(--bpm) ease-out infinite; }
+  .led { animation:led 2.4s steps(1) infinite; }
+  .grau .woofer { animation-duration:calc(var(--bpm) / 2); }
+  .grau .led { animation-duration:.6s; }
+
+  /* bola quicando (modelo solto) */
+  .quica { transform-box:fill-box; transform-origin:50% 50%; animation:quica 3.4s ease-in-out infinite; }
+
+  @keyframes corre   { from { stroke-dashoffset:var(--de) } to { stroke-dashoffset:var(--ate) } }
+  @keyframes reflexo { 0% { transform:translateX(0) skewX(-20deg) } 40%, 100% { transform:translateX(var(--dist)) skewX(-20deg) } }
+  @keyframes pisca   { 0%, 100% { opacity:0; transform:scale(.2) rotate(0deg) } 50% { opacity:1; transform:scale(1) rotate(45deg) } }
+  @keyframes cintila { 0%, 100% { transform:scale(.86) rotate(0deg) } 50% { transform:scale(1.12) rotate(14deg) } }
+  @keyframes janela  { 0%, 74% { opacity:1 } 75%, 100% { opacity:.1 } }
+  @keyframes luz     { from { opacity:.45 } to { opacity:1 } }
+  @keyframes abana   { from { transform:rotate(-16deg) } to { transform:rotate(14deg) } }
+  @keyframes orelha  { 0%, 88%, 100% { transform:rotate(0) } 91% { transform:rotate(-16deg) } 94% { transform:rotate(5deg) } }
+  @keyframes orelha2 { 0%, 86%, 100% { transform:rotate(0) } 89% { transform:rotate(16deg) } 92% { transform:rotate(-5deg) } }
+  @keyframes olho    { 0%, 94%, 100% { transform:scaleY(1) } 96.5% { transform:scaleY(.1) } }
+  @keyframes ofega   { from { transform:scaleY(.8) } to { transform:scaleY(1.14) } }
+  @keyframes inclina { 0%, 58%, 100% { transform:rotate(0) } 64%, 80% { transform:rotate(-10deg) } }
+  @keyframes latido  { 0%, 100% { transform:rotate(0) translateY(0) } 45% { transform:rotate(-7deg) translateY(-2px) } }
+  @keyframes grave   { 0% { transform:scale(1.14) } 35% { transform:scale(.97) } 100% { transform:scale(1) } }
+  @keyframes led     { 0% { stroke:#19e36b } 25% { stroke:#ffd21f } 50% { stroke:#4c86ff } 75% { stroke:#ffffff } }
+  @keyframes quica {
+    0%, 52%, 100% { transform:translateY(0) rotate(0deg) }
+    63% { transform:translateY(calc(var(--h) * -1)) rotate(-100deg) }
+    74% { transform:translateY(0) rotate(-200deg) }
+    84% { transform:translateY(calc(var(--h) * -.45)) rotate(-280deg) }
+    94% { transform:translateY(0) rotate(-360deg) }
+  }
+</style>
+</head>
+<body>
+
+<div class="palco">
+  <div class="demo-only dica"></div>
+  <div class="demo-only cam-box">câmera</div>
+  <svg class="cena" xmlns="http://www.w3.org/2000/svg"></svg>
+  <canvas></canvas>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const C = CONFIG, COR = C.cores, CONT = COR.contorno;
+  const q = new URLSearchParams(location.search);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const escolhe = arr => arr[Math.floor(Math.random() * arr.length)];
+  const f = n => Math.round(n * 100) / 100;
+  const num = (key, def, min, max) => {
+    const v = parseFloat(q.get(key));
+    return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def;
+  };
+  const NAO = /^(0|nao|não|false|off)$/i;
+  const liga = (key, def) => q.has(key) ? !NAO.test(q.get(key)) : def;   // ?morro=0 desliga
+
+  // ---------- modelo, tela e câmera (em pixels da tela do OBS) ----------
+  // ?tela=valorant: a fonte cobre a tela toda e a moldura cai no lugar da câmera
+  // ?solta: só a câmera, com borda em volta toda; a fonte é a câmera + margem pros enfeites
+  const SOLTA = q.has('solta') || q.get('tela') === 'solta';
+  const TELA = C.telas[q.get('tela')] ? q.get('tela') : C.telaPadrao;
+  let SW = C.tela.largura, SH = C.tela.altura, X, Y, W, H;
+  if (SOLTA) {
+    W = num('largura', C.solta.largura, 60, 3840); H = num('altura', C.solta.altura, 34, 2160);
+  } else {
+    const rq = (q.get('resolucao') || '').match(/^(\d{3,4})(?:\s*[x×*]\s*(\d{3,4}))?$/i);
+    if (rq) { SW = +rq[1]; SH = rq[2] ? +rq[2] : Math.round(SW * 9 / 16); }
+    const esc = SW / C.tela.largura, cam = C.telas[TELA].cam;   // ?resolucao=1280x720 sem x/y: as medidas encolhem junto
+    X = num('x', cam.x * esc, 0, SW - 60); Y = num('y', cam.y * esc, 0, SH - 40);
+    W = num('largura', cam.largura * esc, 60, SW - X); H = num('altura', cam.altura * esc, 34, SH - Y + 40);
+  }
+  const ARR = SOLTA ? 'solta' : C.telas[TELA].arranjo;   // onde vai cada enfeite
+  const k = Math.min(2.4, Math.max(.4, Math.min(W / 400, H / 230)));   // tamanho dos enfeites acompanha a câmera
+  if (SOLTA) {                                          // margem em volta: 105 dos lados e embaixo (a moto passa por ali), 200 em cima (numa câmera de 400)
+    X = Math.round(105 * k); Y = Math.round(200 * k);
+    SW = Math.round(X + W + 105 * k); SH = Math.round(Y + H + 105 * k);
+  }
+  const NOME = (q.has('nome') ? q.get('nome') : C.nome).trim().slice(0, 24);
+  const NP = Math.round(num('pipas', C.pipas, 0, 300));
+  const VEL = num('velocidade', C.velocidade, .1, 3);
+  const GRAU = num('grau', C.grau, 0, 3600);
+  const MOTO = liga('moto', C.moto), MORRO = liga('morro', C.morro), CAO = liga('caramelo', C.caramelo);
+  const SOM = liga('som', C.som), ADES = liga('adesivos', C.adesivos);
+  let GIRIAS = C.girias.slice();
+  if (q.has('girias')) {                                // ?girias=0 desliga · ?girias=COÉ,PAPO RETO troca a lista
+    const g = q.get('girias').trim();
+    if (NAO.test(g)) GIRIAS = [];
+    else if (g && !/^(1|sim|true|on)$/i.test(g)) GIRIAS = g.split(',').map(s => s.trim().toUpperCase().slice(0, 22)).filter(Boolean).slice(0, 40);
+  }
+  const B = C.borda * k, CW = 3.2 * k;                  // grossura da borda e do contorno
+  const ins = B / 2 + CW / 2;                           // linha do meio da borda, por dentro da câmera
+  const RAIO = Math.max(2, C.raio * k);                 // raio do canto, por fora
+  // lados encostados na beirada da tela ficam sem borda (a moldura continua pra fora)
+  const abre = SOLTA ? {} : { cima: Y <= 2, esq: X <= 2, dir: X + W >= SW - 2, baixo: Y + H >= SH - 2 };
+
+  // área que o desenho ocupa (o resto da tela fica vazio): quanto passa da câmera pra cada lado
+  let RX = 0, RY = 0, RR = SW, RB = SH;
+  if (!SOLTA) {
+    const m = [30, 145, 230, 24];                       // esquerda, cima (até o minimapa), direita (o salto da moto), embaixo
+    RX = Math.max(0, X - m[0] * k); RY = Math.max(0, Y - m[1] * k);
+    RR = Math.min(SW, X + W + m[2] * k); RB = Math.min(SH, Y + H + m[3] * k);
+  }
+  const RW = RR - RX, RH = RB - RY;
+
+  const palco = document.querySelector('.palco');
+  const cena = document.querySelector('.cena');
+  const canvas = document.querySelector('canvas'), ctx = canvas.getContext('2d');
+  const medidor = document.createElement('canvas').getContext('2d');
+  palco.style.width = SW + 'px'; palco.style.height = SH + 'px';
+  for (const el of [cena, canvas]) el.style.cssText = 'left:' + RX + 'px;top:' + RY + 'px;width:' + RW + 'px;height:' + RH + 'px';
+  cena.setAttribute('viewBox', RX + ' ' + RY + ' ' + RW + ' ' + RH);
+
+  // fundo de exemplo só fora do OBS (o OBS injeta window.obsstudio na página)
+  let demo = C.fundoDemo === true || (C.fundoDemo === 'auto' && !window.obsstudio);
+  if (q.has('preview')) demo = true;
+  if (q.has('semfundo')) demo = false;
+  if (demo) document.body.classList.add('demo');
+  const zoom = demo && q.has('zoom') && !SOLTA;
+  document.querySelector('.cam-box').style.cssText = 'left:' + X + 'px;top:' + Y + 'px;width:' + W + 'px;height:' + H + 'px;border-radius:' + f(RAIO) + 'px';
+  const dica = document.querySelector('.dica');
+  dica.innerHTML = '<b>' + (SOLTA ? 'Só a câmera' : 'Tela do Valorant') + ' · OBS · fonte Navegador · ' + SW + ' × ' + SH + '</b><span>clique em qualquer lugar pra fazer o grau 🏍️</span>';
+  if (SOLTA) {                                          // a fonte é pequena: a dica fica fora dela
+    dica.classList.add('fixa');
+    dica.innerHTML += '<span>a câmera fica ' + X + ' px da esquerda e ' + Y + ' px do topo da fonte</span>';
+    document.body.appendChild(dica);
+  } else dica.style.left = Math.round(SW * .31) + 'px';
+  if (demo && !SOLTA) {                                 // o HUD do Valorant e o overlay dela, de mentirinha (medido da live)
+    const s = SW / 1920, hud = (cls, x, y, w, h, txt) => {
+      const d = document.createElement('div');
+      d.className = 'demo-only hud ' + cls;
+      d.style.cssText = 'left:' + x * s + 'px;top:' + y * s + 'px;width:' + w * s + 'px;height:' + h * s + 'px';
+      d.textContent = txt;
+      palco.insertBefore(d, cena);
+    };
+    hud('mapa', 27, 45, 420, 420, 'minimapa');
+    hud('timer', 26, 44, 190, 70, '12:15:23');
+    hud('meta', 12, 128, 296, 100, 'meta: aluguel + luz');
+    hud('texto', 16, 238, 220, 60, 'RANKING');
+    hud('', 400, 14, 1130, 72, 'placar');
+    hud('', 540, 975, 850, 90, 'vida · habilidades · munição');
+  }
+
+  // ================================================================
+  //  desenhos (strings SVG, coordenadas da tela)
+  // ================================================================
+  const anima = (t0, t1, a) => 'style="--t:' + f(rnd(t0, t1)) + 's;--d:-' + f(rnd(0, 6)) + 's;--a:' + a + 'deg"';
+
+  // brilhinho de 4 pontas
+  function dBrilho(cx, cy, r) {
+    const a = r * .16, b = r * .3;
+    return 'M' + f(cx) + ' ' + f(cy - r) +
+      'C' + f(cx + a) + ' ' + f(cy - b) + ' ' + f(cx + b) + ' ' + f(cy - a) + ' ' + f(cx + r) + ' ' + f(cy) +
+      'C' + f(cx + b) + ' ' + f(cy + a) + ' ' + f(cx + a) + ' ' + f(cy + b) + ' ' + f(cx) + ' ' + f(cy + r) +
+      'C' + f(cx - a) + ' ' + f(cy + b) + ' ' + f(cx - b) + ' ' + f(cy + a) + ' ' + f(cx - r) + ' ' + f(cy) +
+      'C' + f(cx - b) + ' ' + f(cy - a) + ' ' + f(cx - a) + ' ' + f(cy - b) + ' ' + f(cx) + ' ' + f(cy - r) + 'Z';
+  }
+  // estrela de 5 pontas (as do céu da bandeira)
+  function dEstrela(cx, cy, r) {
+    let d = '';
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r;
+      d += (i ? 'L' : 'M') + f(cx + Math.cos(a) * rr) + ' ' + f(cy + Math.sin(a) * rr);
+    }
+    return d + 'Z';
+  }
+  function brilho(cx, cy, r, cor) {
+    return '<path d="' + dBrilho(cx, cy, r) + '" fill="' + (cor || COR.amareloClaro) + '" stroke="' + CONT + '" stroke-width="' + f(Math.max(.8, r * .16)) + '" stroke-linejoin="round"/>';
+  }
+  function pisca(x, y, r) {                             // brilhinho que acende e apaga
+    return '<path class="pisca" ' + anima(2.2, 4.2, 0) + ' d="' + dBrilho(x, y, r) + '" fill="' + escolhe(['#fff', COR.amareloClaro, '#fff']) + '"/>';
+  }
+
+  // ---------- morrinho: casinhas empilhadas, caixa d'água, antena e a bandeira no alto ----------
+  // [x, topo, largura, base, cor, janelas [dx, dy, l, a, acesa], porta [dx, l, a] ou null, extra]  (base em (0, 0), unidades de 1)
+  const CASAS = [
+    [24, -100, 30, -60, '#efe7d2', [[5, 8, 7, 7, 1], [17, 8, 7, 7, 0]], null, 'bandeira'],     // lá no alto
+    [56, -94, 26, -60, '#f2b33d', [[5, 8, 7, 7, 0], [15, 8, 6, 7, 1]], null, 'ferro'],
+    [4, -74, 30, -26, '#86b9ea', [[5, 8, 7, 8, 1], [17, 8, 7, 8, 0]], null, 'caixa'],          // meio
+    [34, -68, 32, -26, '#c65a38', [[5, 9, 8, 8, 1], [19, 9, 8, 8, 1]], null, 'tijolo'],
+    [66, -80, 28, -26, '#3fb892', [[5, 8, 7, 8, 0], [16, 8, 7, 8, 1], [5, 22, 7, 8, 1]], null, ''],
+    [94, -60, 30, -26, '#f290b6', [[6, 8, 7, 8, 1], [17, 8, 7, 8, 0]], null, 'antena'],
+    [0, -40, 34, 0, '#f7cf4a', [[5, 8, 8, 8, 1]], [21, 8, 14], ''],                             // frente, em cima da borda
+    [34, -34, 30, 0, '#ef7b5f', [[5, 8, 8, 8, 0], [17, 8, 8, 8, 1]], null, 'ferro'],
+    [64, -46, 36, 0, '#9a83e0', [[6, 8, 8, 8, 1], [21, 8, 8, 8, 1], [6, 24, 8, 8, 0]], [22, 8, 13], ''],
+    [100, -30, 32, 0, '#ebe6dc', [[5, 8, 8, 7, 1]], [19, 8, 14], ''],
+  ];
+  const MORRO_L = 138;                                  // largura do morrinho (com o morro atrás)
+  let bandeira = null, ancoraLinha = null;
+  function morro(x0, yb, s) {
+    const X_ = a => f(x0 + a * s), Y_ = b => f(yb + b * s), P = (a, b) => X_(a) + ' ' + Y_(b);
+    const rect = (a, b, w, h) => 'x="' + X_(a) + '" y="' + Y_(b) + '" width="' + f(w * s) + '" height="' + f(h * s) + '"';
+    const sw = f(1.5 * s);
+    let o = '<g class="pop" data-x="' + X_(66) + '">';
+    // o morro atrás, com mato
+    o += '<path d="M' + P(-12, 2) + 'C' + P(-6, -52) + ' ' + P(8, -98) + ' ' + P(38, -112) + 'C' + P(62, -122) + ' ' + P(98, -106) + ' ' + P(114, -80) +
+         'C' + P(128, -60) + ' ' + P(140, -26) + ' ' + P(146, 2) + 'Z" fill="url(#gMorro)" stroke="' + CONT + '" stroke-width="' + sw + '"/>';
+    for (const [a, b, r] of [[-4, -44, 8], [2, -62, 7], [134, -30, 8], [124, -52, 7], [18, -92, 6]])
+      o += '<circle cx="' + X_(a) + '" cy="' + Y_(b) + '" r="' + f(r * s) + '" fill="#2a8a4c" stroke="' + CONT + '" stroke-width="' + f(1.2 * s) + '"/>';
+    for (const [x, top, w, base, cor, jan, porta, extra] of CASAS) {
+      const h = base - top;
+      o += '<rect ' + rect(x, top, w, h) + ' fill="' + cor + '" stroke="' + CONT + '" stroke-width="' + sw + '"/>';
+      if (extra === 'tijolo') o += '<rect ' + rect(x, top, w, h) + ' fill="url(#pTijolo)"/>';
+      o += '<rect ' + rect(x, top, w, h) + ' fill="url(#gSombra)"/>';
+      o += '<rect ' + rect(x - 1.6, top - 3.4, w + 3.2, 4.4) + ' fill="#c2bbb0" stroke="' + CONT + '" stroke-width="' + f(1.2 * s) + '"/>';   // a laje
+      for (const [dx, dy, jw, jh, acesa] of jan) {
+        if (acesa) {
+          o += '<circle class="luz" ' + anima(1.6, 3, 0) + ' cx="' + X_(x + dx + jw / 2) + '" cy="' + Y_(top + dy + jh / 2) + '" r="' + f(8 * s) + '" fill="url(#gLuz)"/>';
+          o += '<rect class="janela" ' + anima(7, 16, 0) + ' ' + rect(x + dx, top + dy, jw, jh) + ' fill="#ffd66b" stroke="' + CONT + '" stroke-width="' + f(1 * s) + '"/>';
+        } else o += '<rect ' + rect(x + dx, top + dy, jw, jh) + ' fill="#27324d" stroke="' + CONT + '" stroke-width="' + f(1 * s) + '"/>';
+        o += '<path d="M' + P(x + dx + jw / 2, top + dy) + 'L' + P(x + dx + jw / 2, top + dy + jh) + '" stroke="' + CONT + '" stroke-opacity=".5" stroke-width="' + f(.7 * s) + '"/>';
+      }
+      if (porta) o += '<rect ' + rect(x + porta[0], base - porta[2], porta[1], porta[2]) + ' fill="#2f5fb8" stroke="' + CONT + '" stroke-width="' + f(1.1 * s) + '"/>' +
+                      '<circle cx="' + X_(x + porta[0] + porta[1] - 2) + '" cy="' + Y_(base - porta[2] / 2) + '" r="' + f(.9 * s) + '" fill="' + COR.amarelo + '"/>';
+      if (extra === 'ferro' || extra === 'tijolo')          // vergalhão pra cima da laje, esperando o próximo andar
+        o += '<path d="M' + P(x + 2, top - 3.4) + 'L' + P(x + 2.6, top - 10) + 'M' + P(x + 5, top - 3.4) + 'L' + P(x + 5.2, top - 8.6) + 'M' + P(x + w - 3, top - 3.4) + 'L' + P(x + w - 3.6, top - 9.4) + '" stroke="#7a5c44" stroke-width="' + f(1.1 * s) + '" stroke-linecap="round"/>';
+      if (extra === 'caixa') {                              // a caixa d'água azul
+        const c = x + w / 2, t = top - 3.4;
+        o += '<path d="M' + P(c - 8, t) + 'L' + P(c - 6.6, t - 13) + 'L' + P(c + 6.6, t - 13) + 'L' + P(c + 8, t) + 'Z" fill="url(#gCaixa)" stroke="' + CONT + '" stroke-width="' + sw + '" stroke-linejoin="round"/>' +
+             '<path d="M' + P(c - 7.4, t - 6) + 'L' + P(c + 7.4, t - 6) + '" stroke="#6f9ff2" stroke-width="' + f(1.2 * s) + '"/>' +
+             '<ellipse cx="' + X_(c) + '" cy="' + Y_(t - 13) + '" rx="' + f(7.4 * s) + '" ry="' + f(2.4 * s) + '" fill="#2657bf" stroke="' + CONT + '" stroke-width="' + f(1.3 * s) + '"/>';
+      }
+      if (extra === 'antena') {
+        const c = x + w - 8, t = top - 3.4;
+        o += '<path d="M' + P(c, t) + 'L' + P(c, t - 20) + 'M' + P(c - 7, t - 16) + 'L' + P(c + 7, t - 16) + 'M' + P(c - 5, t - 12) + 'L' + P(c + 5, t - 12) + 'M' + P(c - 3.5, t - 8) + 'L' + P(c + 3.5, t - 8) + '" stroke="#4d5563" stroke-width="' + f(1.2 * s) + '" stroke-linecap="round"/>';
+      }
+      if (extra === 'bandeira') {                           // o mastro; a bandeira tremula no canvas
+        const c = x + 9, t = top - 3.4;
+        o += '<path d="M' + P(c, t) + 'L' + P(c, t - 34) + '" stroke="' + CONT + '" stroke-width="' + f(2.6 * s) + '" stroke-linecap="round"/>' +
+             '<path d="M' + P(c, t) + 'L' + P(c, t - 34) + '" stroke="#c9ced6" stroke-width="' + f(1.2 * s) + '" stroke-linecap="round"/>' +
+             '<circle cx="' + X_(c) + '" cy="' + Y_(t - 35) + '" r="' + f(1.9 * s) + '" fill="' + COR.amarelo + '" stroke="' + CONT + '" stroke-width="' + f(.9 * s) + '"/>';
+        bandeira = { x: x0 + c * s + .6 * s, y: yb + (t - 33.6) * s, s };
+        ancoraLinha = [x0 + (x + w / 2) * s, yb + top * s];
+      }
+    }
+    return o + '</g>';
+  }
+
+  // ---------- vira-lata caramelo sentado, de bandana do Brasil; base em (x, y) ----------
+  let cao = null, caoEl = null;
+  function caramelo(x, yb, s) {
+    const P = (a, b) => f(x + a * s) + ' ' + f(yb + b * s), w = n => f(n * s);
+    const X_ = a => f(x + a * s), Y_ = b => f(yb + b * s);
+    cao = { x, yb, s, topo: yb - 72 * s, larg: 24 * s };
+    const orelha = lado => {
+      const m = a => a * lado;
+      return '<g class="' + (lado < 0 ? 'orelha-e' : 'orelha-d') + '">' +
+        '<path d="M' + P(m(13.5), -54) + 'C' + P(m(17), -60) + ' ' + P(m(18.5), -67) + ' ' + P(m(15), -72) + 'C' + P(m(11), -69) + ' ' + P(m(7.5), -64) + ' ' + P(m(5.5), -59.5) + 'Z" fill="#b8692a" stroke="' + CONT + '" stroke-width="' + w(1.8) + '" stroke-linejoin="round"/>' +
+        '<path d="M' + P(m(12.2), -56.6) + 'C' + P(m(14.4), -61) + ' ' + P(m(15), -65) + ' ' + P(m(14.2), -68) + 'C' + P(m(11.6), -66) + ' ' + P(m(9.2), -62.6) + ' ' + P(m(8.2), -59.6) + 'Z" fill="#eaa77a"/></g>';
+    };
+    return '<g class="caramelo"><g class="pop" data-x="' + f(x) + '">' +
+      // rabo abanando, atrás
+      '<g class="rabo"><path d="M' + P(9, -8) + 'C' + P(20, -9) + ' ' + P(27, -18) + ' ' + P(25, -31) + '" fill="none" stroke="' + CONT + '" stroke-width="' + w(8.6) + '" stroke-linecap="round"/>' +
+        '<path d="M' + P(9, -8) + 'C' + P(20, -9) + ' ' + P(27, -18) + ' ' + P(25, -31) + '" fill="none" stroke="#dc8f40" stroke-width="' + w(5.4) + '" stroke-linecap="round"/>' +
+        '<path d="M' + P(25.5, -27.5) + 'L' + P(25, -31) + '" stroke="#f6d3a0" stroke-width="' + w(5) + '" stroke-linecap="round"/></g>' +
+      // corpo sentado e peito clarinho
+      '<path d="M' + P(-15, 0) + 'C' + P(-19, -10) + ' ' + P(-16, -26) + ' ' + P(-9, -33) + 'C' + P(-5, -37) + ' ' + P(5, -37) + ' ' + P(9, -33) + 'C' + P(16, -26) + ' ' + P(19, -10) + ' ' + P(15, 0) + 'Z" fill="url(#gCaramelo)" stroke="' + CONT + '" stroke-width="' + w(2) + '" stroke-linejoin="round"/>' +
+      '<path d="M' + P(-6, -31) + 'C' + P(-8, -20) + ' ' + P(-5, -9) + ' ' + P(0, -5) + 'C' + P(5, -9) + ' ' + P(8, -20) + ' ' + P(6, -31) + 'Z" fill="#f8dcae"/>' +
+      // patas da frente
+      '<path d="M' + P(-8.6, -19) + 'L' + P(-8.6, -2) + 'M' + P(8.6, -19) + 'L' + P(8.6, -2) + '" stroke="' + CONT + '" stroke-width="' + w(7.4) + '" stroke-linecap="round"/>' +
+      '<path d="M' + P(-8.6, -19) + 'L' + P(-8.6, -2) + 'M' + P(8.6, -19) + 'L' + P(8.6, -2) + '" stroke="#e39a4e" stroke-width="' + w(4.6) + '" stroke-linecap="round"/>' +
+      '<ellipse cx="' + X_(-8.6) + '" cy="' + Y_(-1.4) + '" rx="' + w(4.4) + '" ry="' + w(2.6) + '" fill="#f8dcae" stroke="' + CONT + '" stroke-width="' + w(1.4) + '"/>' +
+      '<ellipse cx="' + X_(8.6) + '" cy="' + Y_(-1.4) + '" rx="' + w(4.4) + '" ry="' + w(2.6) + '" fill="#f8dcae" stroke="' + CONT + '" stroke-width="' + w(1.4) + '"/>' +
+      // bandana do Brasil
+      '<path d="M' + P(-12.5, -35) + 'Q' + P(0, -30.5) + ' ' + P(12.5, -35) + 'L' + P(0, -20.5) + 'Z" fill="' + COR.verde + '" stroke="' + CONT + '" stroke-width="' + w(1.6) + '" stroke-linejoin="round"/>' +
+      '<path d="M' + P(-6.4, -31.6) + 'L' + P(0, -26.4) + 'L' + P(6.4, -31.6) + 'L' + P(0, -33.2) + 'Z" fill="' + COR.amarelo + '"/>' +
+      '<circle cx="' + X_(0) + '" cy="' + Y_(-30.6) + '" r="' + w(2) + '" fill="' + COR.azul + '"/>' +
+      // cabeça
+      '<g class="cabeca">' + orelha(-1) + orelha(1) +
+        '<ellipse cx="' + X_(0) + '" cy="' + Y_(-50) + '" rx="' + w(14) + '" ry="' + w(12.5) + '" fill="url(#gCaramelo)" stroke="' + CONT + '" stroke-width="' + w(2) + '"/>' +
+        '<ellipse cx="' + X_(-5.6) + '" cy="' + Y_(-57) + '" rx="' + w(2.2) + '" ry="' + w(1.3) + '" fill="#f8dcae"/>' +
+        '<ellipse cx="' + X_(5.6) + '" cy="' + Y_(-57) + '" rx="' + w(2.2) + '" ry="' + w(1.3) + '" fill="#f8dcae"/>' +
+        '<g class="olhos"><ellipse cx="' + X_(-5.4) + '" cy="' + Y_(-52.6) + '" rx="' + w(2.3) + '" ry="' + w(2.7) + '" fill="' + CONT + '"/>' +
+          '<ellipse cx="' + X_(5.4) + '" cy="' + Y_(-52.6) + '" rx="' + w(2.3) + '" ry="' + w(2.7) + '" fill="' + CONT + '"/>' +
+          '<circle cx="' + X_(-6.2) + '" cy="' + Y_(-53.6) + '" r="' + w(.9) + '" fill="#fff"/><circle cx="' + X_(4.6) + '" cy="' + Y_(-53.6) + '" r="' + w(.9) + '" fill="#fff"/></g>' +
+        '<ellipse cx="' + X_(0) + '" cy="' + Y_(-45.4) + '" rx="' + w(8.6) + '" ry="' + w(6.2) + '" fill="#f8dcae"/>' +
+        '<ellipse cx="' + X_(-9.6) + '" cy="' + Y_(-46.4) + '" rx="' + w(2.4) + '" ry="' + w(1.3) + '" fill="#ff9aa8" opacity=".5"/>' +
+        '<ellipse cx="' + X_(9.6) + '" cy="' + Y_(-46.4) + '" rx="' + w(2.4) + '" ry="' + w(1.3) + '" fill="#ff9aa8" opacity=".5"/>' +
+        '<g class="lingua"><path d="M' + P(-2.3, -42) + 'Q' + P(-2.7, -37.4) + ' ' + P(0, -36.8) + 'Q' + P(2.7, -37.4) + ' ' + P(2.3, -42) + 'Z" fill="#ff7a93" stroke="' + CONT + '" stroke-width="' + w(1) + '"/>' +
+          '<path d="M' + P(0, -41.4) + 'L' + P(0, -38.6) + '" stroke="#d94f6c" stroke-width="' + w(.8) + '"/></g>' +
+        '<path d="M' + P(-3.3, -48.6) + 'Q' + P(0, -50.8) + ' ' + P(3.3, -48.6) + 'Q' + P(2.8, -45.6) + ' ' + P(0, -45) + 'Q' + P(-2.8, -45.6) + ' ' + P(-3.3, -48.6) + 'Z" fill="' + CONT + '"/>' +
+        '<ellipse cx="' + X_(-1) + '" cy="' + Y_(-48.7) + '" rx="' + w(1) + '" ry="' + w(.5) + '" fill="#fff" opacity=".6"/>' +
+        '<path d="M' + P(0, -45) + 'L' + P(0, -42.8) + 'M' + P(-4, -42.6) + 'Q' + P(-2, -40.8) + ' ' + P(0, -42.8) + 'Q' + P(2, -40.8) + ' ' + P(4, -42.6) + '" fill="none" stroke="' + CONT + '" stroke-width="' + w(1.2) + '" stroke-linecap="round"/>' +
+      '</g>' +
+    '</g></g>';
+  }
+
+  // ---------- caixa de som (tipo JBL) com LED, batendo o grave; base em (x, y) ----------
+  let som = null;
+  function caixaSom(x, yb, s) {
+    const P = (a, b) => f(x + a * s) + ' ' + f(yb + b * s), w = n => f(n * s);
+    const X_ = a => f(x + a * s), Y_ = b => f(yb + b * s);
+    som = { x, yb, s, topo: yb - 84 * s };
+    const bpm = 'style="--bpm:' + f(60 / C.bpm) + 's"';
+    const alca = 'M' + P(-12, -71) + 'L' + P(-12, -80) + 'Q' + P(-12, -84) + ' ' + P(-8, -84) + 'L' + P(8, -84) + 'Q' + P(12, -84) + ' ' + P(12, -80) + 'L' + P(12, -71);
+    const falante = (cy, r) =>
+      '<circle class="led" cx="' + X_(0) + '" cy="' + Y_(cy) + '" r="' + w(r + 2.2) + '" fill="none" stroke-width="' + w(2.2) + '"/>' +
+      '<g class="woofer" ' + bpm + '><circle cx="' + X_(0) + '" cy="' + Y_(cy) + '" r="' + w(r) + '" fill="url(#gWoofer)" stroke="' + CONT + '" stroke-width="' + w(1.6) + '"/>' +
+        '<circle cx="' + X_(0) + '" cy="' + Y_(cy) + '" r="' + w(r * .64) + '" fill="none" stroke="#4d535e" stroke-width="' + w(1.1) + '"/>' +
+        '<circle cx="' + X_(0) + '" cy="' + Y_(cy) + '" r="' + w(r * .32) + '" fill="#2b2f37" stroke="#5c636e" stroke-width="' + w(1) + '"/></g>';
+    return '<g class="pop" data-x="' + f(x) + '">' +
+      '<path d="' + alca + '" fill="none" stroke="' + CONT + '" stroke-width="' + w(6) + '" stroke-linejoin="round"/>' +
+      '<path d="' + alca + '" fill="none" stroke="#3a3f48" stroke-width="' + w(3.2) + '" stroke-linejoin="round"/>' +
+      '<rect x="' + X_(-23) + '" y="' + Y_(-72) + '" width="' + w(46) + '" height="' + w(72) + '" rx="' + w(7) + '" fill="url(#gSom)" stroke="' + CONT + '" stroke-width="' + w(2.2) + '"/>' +
+      '<rect class="led" x="' + X_(-20) + '" y="' + Y_(-69) + '" width="' + w(40) + '" height="' + w(66) + '" rx="' + w(5) + '" fill="none" stroke-width="' + w(1.2) + '" stroke-opacity=".75"/>' +
+      falante(-26, 14.5) + falante(-56, 8.4) +
+      '<path d="M' + P(-9, -42) + 'L' + P(9, -42) + '" stroke="' + COR.verde + '" stroke-width="' + w(2.2) + '" stroke-linecap="round"/>' +
+      '<path d="M' + P(-4.5, -42) + 'L' + P(4.5, -42) + '" stroke="' + COR.amarelo + '" stroke-width="' + w(2.2) + '" stroke-linecap="round"/>' +
+      '<rect x="' + X_(-20) + '" y="' + Y_(-1.5) + '" width="' + w(8) + '" height="' + w(3.4) + '" rx="' + w(1) + '" fill="' + CONT + '"/>' +
+      '<rect x="' + X_(12) + '" y="' + Y_(-1.5) + '" width="' + w(8) + '" height="' + w(3.4) + '" rx="' + w(1) + '" fill="' + CONT + '"/>' +
+    '</g>';
+  }
+
+  // ---------- bola de futebol fazendo embaixadinha (modelo solto); base em (x, y) ----------
+  function bola(x, yb, s) {
+    const r = 11 * s, cy = yb - r;
+    const pent = (a, d, rr) => {                        // pentágono preto, a distância d do centro na direção a
+      const px = x + Math.cos(a) * d, py = cy + Math.sin(a) * d;
+      let p = '';
+      for (let i = 0; i < 5; i++) { const b = a + i * Math.PI * 2 / 5; p += (i ? 'L' : 'M') + f(px + Math.cos(b) * rr) + ' ' + f(py + Math.sin(b) * rr); }
+      return p + 'Z';
+    };
+    let manchas = pent(-Math.PI / 2, 0, r * .36);
+    for (let i = 0; i < 5; i++) manchas += pent(-Math.PI / 2 + i * Math.PI * 2 / 5 + Math.PI / 5, r * .98, r * .34);
+    return '<ellipse cx="' + f(x) + '" cy="' + f(yb + 1 * s) + '" rx="' + f(9 * s) + '" ry="' + f(2.4 * s) + '" fill="#000" opacity=".28"/>' +
+      '<g class="pop" data-x="' + f(x) + '"><g class="quica" style="--h:' + f(26 * s) + 'px">' +
+        '<circle cx="' + f(x) + '" cy="' + f(cy) + '" r="' + f(r) + '" fill="#fff"/>' +
+        '<g clip-path="url(#clipBola)"><path d="' + manchas + '" fill="#1b1e24"/></g>' +
+        '<circle cx="' + f(x) + '" cy="' + f(cy) + '" r="' + f(r) + '" fill="url(#gBola)" stroke="' + CONT + '" stroke-width="' + f(1.8 * s) + '"/>' +
+      '</g></g>';
+  }
+
+  // ---------- adesivos colados na borda ----------
+  const FAM_AD = C.fonteAdesivo + ', Arial Black, sans-serif';
+  function adesivo(tipo, x, y, giro, s) {
+    let forma = '', miolo = '';
+    if (tipo === '021') {
+      forma = '<rect x="-23" y="-13" width="46" height="26" rx="7"/>';
+      miolo = '<rect x="-23" y="-13" width="46" height="26" rx="7" fill="#fff" stroke="' + CONT + '" stroke-width="1.4"/>' +
+        '<rect x="-19.5" y="-9.5" width="39" height="19" rx="4.5" fill="#15181d"/>' +
+        '<text x=".9" y="6.4" text-anchor="middle" font-family="' + FAM_AD + '" font-size="15" fill="' + COR.verde + '">021</text>' +
+        '<text x="0" y="5.4" text-anchor="middle" font-family="' + FAM_AD + '" font-size="15" fill="url(#gAmarelo)">021</text>';
+    } else if (tipo === 'rj') {
+      forma = '<circle r="14"/>';
+      miolo = '<circle r="14" fill="#fff" stroke="' + CONT + '" stroke-width="1.4"/><circle r="10.6" fill="' + COR.azul + '"/>' +
+        '<text x="0" y="4.6" text-anchor="middle" font-family="' + FAM_AD + '" font-size="12" fill="#fff">RJ</text>';
+    } else {                                            // coração verde e amarelo
+      const d = 'M0 9C-9 3 -14 -2 -14 -6.8C-14 -11.6 -10.4 -14 -7 -14C-4 -14 -1.6 -12.4 0 -9.6C1.6 -12.4 4 -14 7 -14C10.4 -14 14 -11.6 14 -6.8C14 -2 9 3 0 9Z';
+      forma = '<path d="' + d + '" stroke="#000" stroke-width="7" stroke-linejoin="round"/>';
+      miolo = '<path d="' + d + '" fill="#fff" stroke="' + CONT + '" stroke-width="8.4" stroke-linejoin="round"/>' +
+        '<path d="' + d + '" fill="#fff" stroke="#fff" stroke-width="5.6" stroke-linejoin="round"/>' +
+        '<path d="' + d + '" fill="' + COR.verde + '"/>' +
+        '<g clip-path="url(#clipMeio)"><path d="' + d + '" fill="' + COR.amarelo + '"/></g>' +
+        '<path d="' + d + '" fill="none" stroke="' + CONT + '" stroke-width="1.1"/>' +
+        '<path d="M-9 -9Q-11 -6 -9.6 -3.4" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/>';
+    }
+    return '<g transform="translate(' + f(x) + ' ' + f(y) + ') rotate(' + giro + ') scale(' + f(s) + ')"><g class="pop" data-x="' + f(x) + '">' +
+      '<g transform="translate(1.6 2.4)" fill="#000" opacity=".35">' + forma + '</g>' + miolo + '</g></g>';
+  }
+
+  // o contorno da borda: só nos lados que não encostam na beirada da tela
+  function caminhoBorda(xl, yt, xr, yb, r, fora) {
+    const tem = [!abre.cima, !abre.dir, !abre.baixo, !abre.esq];     // cima, direita, baixo, esquerda (sentido horário)
+    const P = (i, fim, aberto) => {                                  // ponta do lado i: encurta pelo canto, ou estica pra fora da tela
+      const e = aberto ? -fora : r;
+      return i === 0 ? (fim ? [xr - e, yt] : [xl + e, yt]) : i === 1 ? (fim ? [xr, yb - e] : [xr, yt + e])
+           : i === 2 ? (fim ? [xl + e, yb] : [xr - e, yb]) : (fim ? [xl, yt + e] : [xl, yb - e]);
+    };
+    const pt = p => f(p[0]) + ' ' + f(p[1]), arco = p => 'A' + f(r) + ' ' + f(r) + ' 0 0 1 ' + pt(p);
+    if (tem.every(Boolean)) {
+      let d = 'M' + pt(P(0, false, false));
+      for (let i = 0; i < 4; i++) d += 'L' + pt(P(i, true, false)) + arco(P((i + 1) % 4, false, false));
+      return d + 'Z';
+    }
+    let d = '';
+    for (let s = 0; s < 4; s++) {
+      if (!tem[s] || tem[(s + 3) % 4]) continue;                     // começa num lado cujo anterior está aberto
+      let i = s;
+      d += 'M' + pt(P(i, false, true));
+      for (;;) {
+        const prox = (i + 1) % 4, segue = tem[prox];
+        d += 'L' + pt(P(i, true, !segue));
+        if (!segue) break;
+        d += arco(P(prox, false, false));
+        i = prox;
+      }
+    }
+    return d;
+  }
+
+  // ================================================================
+  //  monta a cena (precisa da fonte carregada pra medir o nome)
+  // ================================================================
+  const FAMILIA = '"' + C.fonte + '", "Segoe UI", sans-serif';
+  const TEXTO_NOME = NOME.toUpperCase();
+  const sM = .85 * k, sC = 1.02 * k, sS = .8 * k;        // escala do morrinho, do caramelo e da caixa de som
+  let placa = null, placaEl = null, pipas = [], comecou = false, zonasP = [], roda = null, obst = [], voo = null;
+  let mo = null, bolaP = null, flores = [];
+
+  function formaPlaca(i) {                              // plaquinha com as pontas da bandeira; i = recuo pra dentro
+    const p = placa, pt = p.pt - i * .5;
+    const x0 = p.cx - p.TW / 2 + i * 1.5, x1 = p.cx + p.TW / 2 - i * 1.5, y0 = p.cy - p.TH / 2 + i, y1 = p.cy + p.TH / 2 - i;
+    return 'M' + f(x0) + ' ' + f(p.cy) + 'L' + f(x0 + pt) + ' ' + f(y0) + 'L' + f(x1 - pt) + ' ' + f(y0) + 'L' + f(x1) + ' ' + f(p.cy) +
+           'L' + f(x1 - pt) + ' ' + f(y1) + 'L' + f(x0 + pt) + ' ' + f(y1) + 'Z';
+  }
+
+  function montar() {
+    const xl = X + ins, xr = X + W - ins, yt = Y + ins, yb = Y + H - ins, r = Math.max(3, RAIO - ins);
+    const partes = [], frente = [];
+
+    // ---- onde vai cada enfeite (o morrinho e o caramelo sentam em cima da borda de cima) ----
+    let ads = [];
+    mo = MORRO ? { x: X - (SOLTA ? 6 : 4) * k, y: Y + 1.5 * k } : null;
+    const caoP = CAO ? { x: X + W - 36 * k, y: Y + 1.5 * k } : null;
+    let somP = null;
+    if (SOLTA) {                     // solto: caixa de som embaixo à esquerda, bola embaixo à direita, adesivos na borda de baixo
+      somP = SOM ? { x: X + 22 * k, y: Y + H + 62 * k } : null;
+      bolaP = { x: X + W - 26 * k, y: Y + H + 58 * k };
+      if (ADES) ads = [['021', X + W * .4, yb, -7], ['coracao', X + W * .54, yb, 9], ['rj', X + W * .66, yb, -5]];
+    } else {                         // tela do Valorant: a caixa de som fica do lado de fora, no canto de baixo-direito
+      somP = SOM ? { x: X + W + 30 * k, y: Y + H } : null;
+      if (ADES) ads = [['021', xr, Y + H * .3, -8], ['coracao', xr, Y + H * .62, 10]];
+    }
+    const faixaNome = [mo ? mo.x + MORRO_L * sM + 8 * k : X + 26 * k, caoP ? caoP.x - 24 * sC - 8 * k : X + W - 26 * k];
+
+    // ---- plaquinha com o nome: verde, losango amarelo e o miolo azul, letra de pichação ----
+    if (NOME) {
+      let fs = 25 * k;
+      medidor.font = fs + 'px ' + FAMILIA;
+      let m = medidor.measureText(TEXTO_NOME), tw = m.width;
+      const maxW = Math.max(50 * k, faixaNome[1] - faixaNome[0] - 64 * k);
+      if (tw > maxW) { fs *= maxW / tw; medidor.font = fs + 'px ' + FAMILIA; m = medidor.measureText(TEXTO_NOME); tw = m.width; }
+      const TH = Math.max(fs * 1.7, 38 * k), pt = TH * .36, pad = 13 * k, TW = tw + 2 * pad + 2 * pt;
+      let cx = (faixaNome[0] + faixaNome[1]) / 2;
+      cx = Math.min(faixaNome[1] - TW / 2, Math.max(faixaNome[0] + TW / 2, cx));
+      placa = { cx, cy: yt, TW, TH, pt, fs, asc: m.actualBoundingBoxAscent || fs * .7, desc: m.actualBoundingBoxDescent || 0 };
+    }
+
+    // ---- defs ----
+    const hs = 15 * k;
+    partes.push('<defs>' +
+      '<linearGradient id="gAmarelo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + COR.amareloClaro + '"/><stop offset=".45" stop-color="' + COR.amarelo + '"/><stop offset="1" stop-color="' + COR.amareloEscuro + '"/></linearGradient>' +
+      '<linearGradient id="gVerdeBorda" gradientUnits="userSpaceOnUse" x1="' + f(X) + '" y1="' + f(Y) + '" x2="' + f(X + W) + '" y2="' + f(Y + H) + '">' +
+        '<stop offset="0" stop-color="#4cdb85"/><stop offset=".22" stop-color="' + COR.verde + '"/><stop offset=".4" stop-color="#7ff0ab"/><stop offset=".6" stop-color="' + COR.verde + '"/><stop offset=".82" stop-color="#36d077"/><stop offset="1" stop-color="#008a43"/></linearGradient>' +
+      '<linearGradient id="gAzulBorda" gradientUnits="userSpaceOnUse" x1="0" y1="' + f(Y) + '" x2="0" y2="' + f(Y + H) + '"><stop offset="0" stop-color="#2d5bd6"/><stop offset="1" stop-color="' + COR.azulEscuro + '"/></linearGradient>' +
+      '<linearGradient id="gVerdePlaca" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#34d077"/><stop offset="1" stop-color="#007a3a"/></linearGradient>' +
+      '<linearGradient id="gAzulPlaca" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3563e0"/><stop offset="1" stop-color="#0d2a7c"/></linearGradient>' +
+      '<linearGradient id="gTexto" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe0"/><stop offset=".55" stop-color="#ffe14a"/><stop offset="1" stop-color="#f0b400"/></linearGradient>' +
+      '<linearGradient id="gCaramelo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0b060"/><stop offset=".55" stop-color="#d98a3a"/><stop offset="1" stop-color="#b3662a"/></linearGradient>' +
+      '<linearGradient id="gMorro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f8a52"/><stop offset="1" stop-color="#17482c"/></linearGradient>' +
+      '<linearGradient id="gSombra" x1="0" y1="0" x2="1" y2="0"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>' +
+      '<radialGradient id="gLuz"><stop offset="0" stop-color="#ffd66b" stop-opacity=".7"/><stop offset="1" stop-color="#ffb13b" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="gCaixa" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a92ee"/><stop offset=".5" stop-color="#2c63cf"/><stop offset="1" stop-color="#1c469e"/></linearGradient>' +
+      '<linearGradient id="gSom" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#383e4a"/><stop offset=".5" stop-color="#1f232a"/><stop offset="1" stop-color="#121418"/></linearGradient>' +
+      '<radialGradient id="gWoofer" cx=".42" cy=".38"><stop offset="0" stop-color="#4a505b"/><stop offset=".7" stop-color="#1c1f25"/><stop offset="1" stop-color="#0d0f12"/></radialGradient>' +
+      '<radialGradient id="gBola" cx=".36" cy=".3"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient>' +
+      '<linearGradient id="gReflexo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+      '<pattern id="pEstrelas" patternUnits="userSpaceOnUse" width="' + f(hs) + '" height="' + f(hs) + '">' +
+        '<path d="' + dEstrela(hs * .25, hs * .3, 1.8 * k) + dEstrela(hs * .74, hs * .72, 1.25 * k) + '" fill="#fff" opacity=".95"/>' +
+        '<circle cx="' + f(hs * .8) + '" cy="' + f(hs * .2) + '" r="' + f(.55 * k) + '" fill="#fff"/>' +
+      '</pattern>' +
+      '<pattern id="pTijolo" patternUnits="userSpaceOnUse" width="' + f(8 * sM) + '" height="' + f(5 * sM) + '">' +
+        '<path d="M0 ' + f(4.6 * sM) + 'H' + f(8 * sM) + 'M' + f(4 * sM) + ' 0V' + f(2.3 * sM) + 'M0 ' + f(2.3 * sM) + 'H' + f(8 * sM) + 'M' + f(.4 * sM) + ' ' + f(2.3 * sM) + 'V' + f(4.6 * sM) + '" stroke="#8e3a22" stroke-width="' + f(.7 * sM) + '" fill="none" opacity=".75"/>' +
+      '</pattern>' +
+      '<clipPath id="clipMeio"><rect x="0" y="-20" width="20" height="40"/></clipPath>' +
+      (bolaP ? '<clipPath id="clipBola"><circle cx="' + f(bolaP.x) + '" cy="' + f(bolaP.y - 11 * sC) + '" r="' + f(11 * sC) + '"/></clipPath>' : '') +
+      (placa ? '<clipPath id="clipPlaca"><path d="' + formaPlaca(0) + '"/></clipPath>' : '') +
+    '</defs>');
+
+    // ---- a borda: verde por fora, filete amarelo e o miolo azul com as estrelinhas da bandeira ----
+    const dB = caminhoBorda(xl, yt, xr, yb, r, 40 * k), bm = B * .52;
+    const linha = (stroke, w, extra) => '<path d="' + dB + '" fill="none" stroke="' + stroke + '" stroke-width="' + f(w) + '" stroke-linejoin="round" ' + (extra || '') + '/>';
+    partes.push(
+      linha(COR.verde, B + CW + 14 * k, 'stroke-opacity=".1"'), linha(COR.amarelo, B + CW + 7 * k, 'stroke-opacity=".14"'),
+      linha(CONT, B + CW), linha('url(#gVerdeBorda)', B),
+      linha(COR.amarelo, bm + 2.8 * k), linha('url(#gAzulBorda)', bm), linha('url(#pEstrelas)', bm),
+      '<path d="' + dB + '" transform="translate(' + f(-B * .16) + ' ' + f(-B * .34) + ')" fill="none" stroke="#fff" stroke-opacity=".32" stroke-width="' + f(B * .1) + '" stroke-linecap="round"/>',
+      '<path class="brilho-borda" d="' + dB + '" fill="none" stroke="#fffbe0" stroke-opacity=".9" stroke-width="' + f(B * .42) + '" stroke-linecap="round"/>');
+
+    // ---- estrelinha amarela nos cantos que têm borda dos dois lados e nenhum enfeite ----
+    const tem = [!abre.cima, !abre.dir, !abre.baixo, !abre.esq], o = r * (1 - Math.SQRT1_2);
+    const cantos = [[xr - o, yt + o], [xr - o, yb - o], [xl + o, yb - o], [xl + o, yt + o]];   // TR, BR, BL, TL
+    const enfeitado = [!!caoP, !!somP && !SOLTA || SOLTA, SOLTA && !!somP, !!mo];
+    cantos.forEach((p, i) => {
+      if (tem[i] && tem[(i + 1) % 4] && !enfeitado[i])
+        partes.push('<g class="cintila" ' + anima(2.6, 4, 0) + '><path d="' + dEstrela(p[0], p[1], 10 * k) + '" fill="url(#gAmarelo)" stroke="' + CONT + '" stroke-width="' + f(1.6 * k) + '" stroke-linejoin="round"/></g>');
+    });
+
+    // ---- adesivos, morrinho, bola, caixa de som, caramelo ----
+    for (const [tipo, x, y, g] of ads) partes.push(adesivo(tipo, x, y, g, .92 * k));
+    if (mo) { partes.push(morro(mo.x, mo.y, sM)); flores.push({ x: mo.x + 60 * sM, y: mo.y - 70 * sM, r: 40 * sM }); }
+    if (bolaP) partes.push(bola(bolaP.x, bolaP.y, sC));
+    if (somP) partes.push(caixaSom(somP.x, somP.y, sS));
+    if (caoP) partes.push(caramelo(caoP.x, caoP.y, sC));
+
+    // ---- brilhinhos piscando em volta ----
+    const zb = SOLTA ? [X - 40 * k, X + W + 40 * k, Y - 185 * k, Y - 80 * k] : [X + 120 * k, X + W + 160 * k, RY + 16 * k, Y - 50 * k];
+    for (let i = 0; i < 6; i++) partes.push(pisca(rnd(zb[0], zb[1]), rnd(zb[2], zb[3]), rnd(4, 7) * k));
+
+    // ---- plaquinha ----
+    if (placa) {
+      const p = placa, d = formaPlaca(0), x0 = p.cx - p.TW / 2, x1 = p.cx + p.TW / 2, y0 = p.cy - p.TH / 2;
+      const base = p.cy + (p.asc - p.desc) / 2;
+      const ph = p.TH - 2 * 6.4 * k, px0 = x0 + p.pt + 1.5 * k, px1 = x1 - p.pt - 1.5 * k, py0 = p.cy - ph / 2;
+      const miolo = 'x="' + f(px0) + '" y="' + f(py0) + '" width="' + f(px1 - px0) + '" height="' + f(ph) + '" rx="' + f(ph / 2) + '"';
+      const txt = extra => '<text x="' + f(p.cx) + '" y="' + f(base) + '" text-anchor="middle" font-family=\'' + FAMILIA.replace(/"/g, '') + '\' font-size="' + f(p.fs) + '" ' + extra + '></text>';
+      frente.push('<g class="placa">' +
+        '<path d="' + d + '" transform="translate(' + f(1.5 * k) + ' ' + f(4 * k) + ')" fill="rgba(0,0,0,.35)"/>' +
+        '<path d="' + d + '" fill="url(#gVerdePlaca)" stroke="' + CONT + '" stroke-width="' + f(3.4 * k) + '" stroke-linejoin="round"/>' +
+        '<path d="' + formaPlaca(3.6 * k) + '" fill="url(#gAmarelo)"/>' +
+        '<rect ' + miolo + ' fill="url(#gAzulPlaca)" stroke="' + CONT + '" stroke-width="' + f(1.3 * k) + '"/>' +
+        '<rect ' + miolo + ' fill="url(#pEstrelas)" opacity=".45"/>' +
+        '<g clip-path="url(#clipPlaca)"><rect class="reflexo" style="--dist:' + f(p.TW + 90 * k) + 'px" x="' + f(x0 - 60 * k) + '" y="' + f(y0) + '" width="' + f(30 * k) + '" height="' + f(p.TH) + '" fill="url(#gReflexo)"/></g>' +
+        txt('fill="' + CONT + '" transform="translate(0 ' + f(2.6 * k) + ')" stroke="' + CONT + '" stroke-width="' + f(5 * k) + '" stroke-linejoin="round"') +
+        txt('fill="url(#gTexto)" stroke="' + CONT + '" stroke-width="' + f(4.6 * k) + '" stroke-linejoin="round" paint-order="stroke"') +
+        '<g class="cintila" ' + anima(2.4, 3.4, 0) + '>' + brilho(x0 - 1 * k, p.cy, 7.5 * k, '#fff') + '</g>' +
+        '<g class="cintila" ' + anima(2.4, 3.4, 0) + '>' + brilho(x1 + 1 * k, p.cy, 7.5 * k, '#fff') + '</g>' +
+      '</g>');
+      flores.push({ x: p.cx, y: p.cy, r: p.TH / 2 });
+    }
+    cena.innerHTML = partes.join('') + frente.join('');
+    for (const t of cena.querySelectorAll('.placa text')) t.textContent = TEXTO_NOME;
+    placaEl = cena.querySelector('.placa');
+    caoEl = cena.querySelector('.caramelo');
+    if (caoEl) cena.appendChild(caoEl);                 // o caramelo fica na frente de tudo
+    if (cao) flores.push({ x: cao.x, y: cao.yb - 40 * cao.s, r: 22 * cao.s });
+
+    // o brilho da borda: um traço que corre a borda toda e some por um tempo
+    const bb = cena.querySelector('.brilho-borda'), L = bb.getTotalLength(), D = 44 * k;
+    bb.style.strokeDasharray = f(D) + ' ' + f(2 * L);
+    bb.style.setProperty('--de', f(D) + 'px'); bb.style.setProperty('--ate', f(-2 * L) + 'px');
+    bb.style.setProperty('--t', f((D + 2 * L) / (240 * k)) + 's');
+
+    // ---- onde as pipas voam: em cima da câmera (na tela do jogo, também no alto do lado direito) ----
+    if (SOLTA) zonasP = [{ x0: X - 30 * k, x1: X + W + 30 * k, y0: RY + 26 * k, y1: Y - 96 * k }];
+    else zonasP = [{ x0: X + 20 * k, x1: X + W + 110 * k, y0: RY + 30 * k, y1: Y - 76 * k },     // alto o bastante pra rabiola não cobrir o nome
+                   { x0: X + W + 50 * k, x1: X + W + 190 * k, y0: Y - 76 * k, y1: Y + H * .45 }];
+    for (const z of zonasP) { z.x0 = Math.max(z.x0, RX + 24 * k); z.x1 = Math.min(z.x1, RR - 24 * k); z.y1 = Math.max(z.y1, z.y0 + 10 * k); }
+    if (!ancoraLinha) ancoraLinha = [X + 20 * k, Y + H * .5];
+    // no grau as pipas dão volta em cima da plaquinha
+    roda = { cx: placa ? placa.cx : X + W / 2, cy: Y - (SOLTA ? 120 : 88) * k, rx: Math.min(W * .4, 120 * k), ry: 26 * k };
+
+    // ---- o caminho da moto no grau ----
+    const sMo = TAM_MOTO * k;
+    if (placa) obst.push({ x0: placa.cx - placa.TW / 2 - 16 * k, x1: placa.cx + placa.TW / 2 + 16 * k, h: 26 * k });
+    if (SOLTA) {                     // globo da morte: uma volta inteira em volta da câmera, grudada na borda
+      if (cao) obst.push({ x0: cao.x - 40 * k, x1: cao.x + 44 * k, h: 80 * k });
+      const lt = W - 2 * RAIO, inicio = mo ? Math.max(0, mo.x + MORRO_L * sM - X - RAIO) : W * .1;
+      voo = { tipo: 'volta', s0: Math.min(lt, inicio), dur: 4.6 };
+    } else {                         // tela do jogo: entra pela beirada, empina em cima da borda, pula a plaquinha e dá um mortal por cima do caramelo
+      const xJ = cao ? cao.x - 40 * k - 26 * sMo : X + W - RAIO - 26 * sMo;
+      const x0 = X <= 2 ? X - 170 * k : X + 12 * k;
+      voo = { tipo: 'reta', x0, xJ, dur: Math.max(1.2, (xJ - x0) / (300 * k)), puf: X > 2 };
+    }
+
+    for (let i = 0; i < NP; i++) pipas.push(novaPipa(i));
+  }
+
+  // ================================================================
+  //  carimbos (desenhos prontos, pintados no canvas): pipas, moto, roda, bandeira
+  // ================================================================
+  const PIPA_VB = [-24, -28, 48, 58], MOTO_VB = [-48, -92, 116, 96], RODA_VB = [-15, -15, 30, 30], BAND_VB = [0, 0, 34, 23];
+  const TAM_P = .72, TAM_MOTO = SOLTA ? .84 : .95;      // tamanho da pipa e da moto (vezes k)
+  const CORES_PIPA = [
+    [COR.verde, COR.amarelo, COR.azul], [COR.amarelo, COR.azul, '#fff'], [COR.azul, '#fff', COR.amarelo],
+    [COR.laranja, COR.amarelo, COR.verde], [COR.rosa, '#fff', COR.amarelo], [COR.verde, '#fff', COR.amarelo],
+  ];
+  let carimbosPipa = [], carimboMoto = null, carimboRoda = null, carimboBandeira = null, carimboSombra = null;
+
+  function svgPronto(vb, w, h, miolo) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + h + '" viewBox="' + vb.join(' ') + '">' + miolo + '</svg>';
+  }
+  function pipaSVG(c) {                                 // pipa de papel de seda: vareta em pé, vareta curvada, franjinha nas pontas
+    const corpo = 'M0 -24Q12 -18 18 -5L0 26L-18 -5Q-12 -18 0 -24Z';
+    return '<path d="M-18 -5L-22 3M-18 -5L-17.4 4.4M18 -5L22 3M18 -5L17.4 4.4" stroke="' + CONT + '" stroke-width="3" stroke-linecap="round"/>' +
+      '<path d="M-18 -5L-22 3M-18 -5L-17.4 4.4M18 -5L22 3M18 -5L17.4 4.4" stroke="' + c[0] + '" stroke-width="1.6" stroke-linecap="round"/>' +
+      '<path d="M0 -24Q-12 -18 -18 -5L0 26Z" fill="' + c[0] + '"/>' +
+      '<path d="M0 -24Q12 -18 18 -5L0 26Z" fill="' + c[1] + '"/>' +
+      '<path d="M0 -13L6.4 -3.4L0 6.4L-6.4 -3.4Z" fill="' + c[2] + '" stroke="' + CONT + '" stroke-width="1.1" stroke-linejoin="round"/>' +
+      '<path d="M-18 -5Q0 -15 18 -5M0 -24L0 26" fill="none" stroke="#6b4a2a" stroke-opacity=".75" stroke-width="1.3"/>' +
+      '<path d="' + corpo + '" fill="none" stroke="' + CONT + '" stroke-width="2.1" stroke-linejoin="round"/>' +
+      '<path d="M-3 -19Q-10 -14.5 -13 -7.5" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.6" stroke-linecap="round"/>';
+  }
+  function motoSVG() {                                  // ela de camisa da seleção, short azul, Juliet e argola, na moto verde e amarela
+    const pele = '#d9a07c', peleSombra = '#b97f5c', cabelo = '#1c1411';
+    const traco = (d, cor, l) => '<path d="' + d + '" fill="none" stroke="' + CONT + '" stroke-width="' + (l + 2.4) + '" stroke-linecap="round" stroke-linejoin="round"/>' +
+                                 '<path d="' + d + '" fill="none" stroke="' + cor + '" stroke-width="' + l + '" stroke-linecap="round" stroke-linejoin="round"/>';
+    const ct = 'stroke="' + CONT + '" stroke-linejoin="round"';
+    return '<defs>' +
+      '<linearGradient id="am" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + COR.amareloClaro + '"/><stop offset=".5" stop-color="' + COR.amarelo + '"/><stop offset="1" stop-color="' + COR.amareloEscuro + '"/></linearGradient>' +
+      '<linearGradient id="vd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + COR.verdeClaro + '"/><stop offset="1" stop-color="' + COR.verdeEscuro + '"/></linearGradient>' +
+      '<linearGradient id="cr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7f9fb"/><stop offset=".5" stop-color="#a9b1bc"/><stop offset="1" stop-color="#e3e7ec"/></linearGradient>' +
+      '<linearGradient id="le" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9a3c"/><stop offset=".35" stop-color="#ff3d8b"/><stop offset=".7" stop-color="#7a4dff"/><stop offset="1" stop-color="#27c1ff"/></linearGradient>' +
+      '<linearGradient id="az" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a66dc"/><stop offset="1" stop-color="' + COR.azulEscuro + '"/></linearGradient>' +
+    '</defs>' +
+    // cabelo comprido voando pra trás
+    '<path d="M16 -80C4 -84 -12 -80 -24 -73C-31 -69 -38 -69 -44 -72C-40 -64 -32 -60 -24 -61C-31 -56 -37 -52 -42 -52C-34 -45 -22 -47 -14 -53C-16 -47 -20 -43 -24 -41C-13 -40 -3 -48 3 -56Z" fill="' + cabelo + '" ' + ct + ' stroke-width="1.8"/>' +
+    '<path d="M9 -78C-1 -78 -13 -74 -23 -68M4 -66C-6 -64 -14 -60 -22 -55" fill="none" stroke="#6b4a3a" stroke-opacity=".7" stroke-width="1.5" stroke-linecap="round"/>' +
+    // para-lama de trás, balança e motor
+    '<path d="M-17 -5C-17 -15 -9 -20 1 -19L4 -14C-4 -15 -11 -11 -12 -4Z" fill="url(#vd)" ' + ct + ' stroke-width="1.6"/>' +
+    traco('M0 0L23 -8', '#555b64', 3.2) +
+    '<rect x="17" y="-19" width="18" height="15" rx="3" fill="#3a3f47" stroke="' + CONT + '" stroke-width="1.6"/>' +
+    '<path d="M20 -15.5H32M20 -11.5H32M20 -7.5H32" stroke="#6f7680" stroke-width="1.2"/>' +
+    // escapamento cromado
+    traco('M30 -5C20 -3 9 -7 -2 -11', 'url(#cr)', 2.8) +
+    traco('M4 -10L-15 -15', 'url(#cr)', 5.6) +
+    '<path d="M1 -12.4L-12 -15.8" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<ellipse cx="-17" cy="-15.5" rx="1.6" ry="2.6" transform="rotate(-15 -17 -15.5)" fill="' + CONT + '"/>' +
+    // carenagem, banco e tanque
+    '<path d="M3 -23L27 -23L28 -16L7 -14Z" fill="url(#vd)" ' + ct + ' stroke-width="1.6"/>' +
+    '<path d="M-7 -26C-2 -31 14 -31 28 -29L30 -23L-3 -22Z" fill="#1d1f24" ' + ct + ' stroke-width="1.6"/>' +
+    '<path d="M26 -30C30 -37 42 -38 47 -31L45 -22L28 -22Z" fill="url(#am)" ' + ct + ' stroke-width="1.8"/>' +
+    '<path d="M29 -27.5L45 -29.5" stroke="' + COR.verde + '" stroke-width="2.6"/>' +
+    '<path d="M31 -33C35 -35.5 40 -35.5 43 -33.5" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.3" stroke-linecap="round"/>' +
+    // garfo, para-lama da frente, farol e guidão
+    traco('M44 -34L52 0', 'url(#cr)', 2.8) +
+    '<path d="M42 -13C46 -18 58 -18 62 -12L60 -9.6C56 -14 48 -14 44 -10.6Z" fill="url(#vd)" ' + ct + ' stroke-width="1.5"/>' +
+    '<circle cx="49.5" cy="-31" r="4.4" fill="#fff6c8" stroke="' + CONT + '" stroke-width="1.6"/><circle cx="50.5" cy="-32" r="1.5" fill="#fff"/>' +
+    traco('M44 -35L40 -44L34 -45', '#3a3f47', 2.4) +
+    // perna: short azul, canela, meião e tênis branco
+    traco('M9 -31L29 -30', 'url(#az)', 7.8) +
+    traco('M29.5 -30L26 -13', pele, 4.8) +
+    '<path d="M28 -22.5L26 -13" stroke="#fff" stroke-width="4.8" stroke-linecap="round"/>' +
+    '<path d="M21 -14.5L32 -14.5Q36 -14.5 36 -11L21 -10Z" fill="#fff" ' + ct + ' stroke-width="1.5"/>' +
+    '<path d="M24 -12.4Q29 -11 33 -13" fill="none" stroke="' + COR.verde + '" stroke-width="1.3" stroke-linecap="round"/>' +
+    // camisa da seleção
+    '<path d="M5 -33C3 -44 7 -54 15 -58C22 -59 26 -55 26 -49L24 -33Z" fill="url(#am)" ' + ct + ' stroke-width="1.8"/>' +
+    '<path d="M6.5 -36L24.5 -35.5" stroke="' + COR.verde + '" stroke-width="2.2"/>' +
+    // braço no guidão
+    traco('M20 -51Q30 -46 38 -44', pele, 4.8) +
+    traco('M17 -54L24.5 -48.5', 'url(#am)', 6.8) +
+    '<path d="M23.4 -51L25.8 -47.4" stroke="' + COR.verde + '" stroke-width="2.4" stroke-linecap="round"/>' +
+    '<circle cx="38.5" cy="-44" r="3.5" fill="' + pele + '" stroke="' + CONT + '" stroke-width="1.4"/>' +
+    // pescoço, gola verde e cordãozinho
+    '<path d="M16.5 -58L18 -62" stroke="' + pele + '" stroke-width="5.4" stroke-linecap="round"/>' +
+    '<path d="M12 -57.6Q18 -54.6 24 -57.6" fill="none" stroke="' + COR.verde + '" stroke-width="2.6" stroke-linecap="round"/>' +
+    '<path d="M13.6 -58.6Q18.4 -53.8 22.4 -58.8" fill="none" stroke="#ffcf4a" stroke-width="1.1"/>' +
+    // cabeça, cabelo com risca, argola
+    '<circle cx="20" cy="-70" r="12" fill="' + pele + '" stroke="' + CONT + '" stroke-width="1.8"/>' +
+    '<path d="M7.6 -72C7 -82 16 -86.6 25 -84C30.6 -82.4 33 -78.4 33 -75.4C28 -79.4 22.6 -80 17 -78C14.4 -74 13.2 -68 11.6 -62.6C8.8 -64.6 7.6 -68.6 7.6 -72Z" fill="' + cabelo + '" ' + ct + ' stroke-width="1.4"/>' +
+    '<path d="M13 -80.5C17 -83 22 -83.4 27 -82" fill="none" stroke="#6b4a3a" stroke-opacity=".8" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<ellipse cx="15.4" cy="-68" rx="2" ry="2.6" fill="' + peleSombra + '"/>' +
+    '<circle cx="15.2" cy="-63.6" r="2.2" fill="none" stroke="#ffcf4a" stroke-width="1.1"/>' +
+    // óculos Juliet com lente espelhada
+    '<path d="M14 -72.6L22.4 -73" stroke="#d8dde4" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<path d="M21.6 -74L33.4 -73.2Q34 -69.4 31 -68.4L24.4 -68.6Q21.2 -69.8 21.6 -74Z" fill="url(#le)" ' + ct + ' stroke-width="1.3"/>' +
+    '<path d="M24 -72.4L30.4 -72" stroke="#fff" stroke-opacity=".75" stroke-width="1" stroke-linecap="round"/>' +
+    // nariz, sorriso e bochecha
+    '<path d="M32.4 -68Q34.6 -66.4 32.4 -65.2" fill="none" stroke="' + CONT + '" stroke-width="1.2" stroke-linecap="round"/>' +
+    '<path d="M27.4 -62.8Q30.4 -61.2 32 -63.4" fill="none" stroke="' + CONT + '" stroke-width="1.3" stroke-linecap="round"/>' +
+    '<ellipse cx="26.6" cy="-64.8" rx="2.2" ry="1.2" fill="#ff8f8f" opacity=".5"/>';
+  }
+  function rodaSVG() {
+    let raios = '', cravos = '';
+    for (let i = 0; i < 5; i++) { const a = i * Math.PI * 2 / 5; raios += 'M' + f(Math.cos(a) * 2) + ' ' + f(Math.sin(a) * 2) + 'L' + f(Math.cos(a + .3) * 7.2) + ' ' + f(Math.sin(a + .3) * 7.2); }
+    for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; cravos += 'M' + f(Math.cos(a) * 11.4) + ' ' + f(Math.sin(a) * 11.4) + 'L' + f(Math.cos(a) * 13.2) + ' ' + f(Math.sin(a) * 13.2); }
+    return '<defs><linearGradient id="ar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f9"/><stop offset=".5" stop-color="#9aa2ad"/><stop offset="1" stop-color="#e3e7ec"/></linearGradient></defs>' +
+      '<circle r="13.2" fill="#1b1d22" stroke="' + CONT + '" stroke-width="1.6"/>' +
+      '<path d="' + cravos + '" stroke="#3a3d45" stroke-width="1.6"/>' +
+      '<circle r="8.6" fill="url(#ar)" stroke="' + CONT + '" stroke-width="1.2"/>' +
+      '<circle r="6.6" fill="#2a2d33"/>' +
+      '<path d="' + raios + '" stroke="#dfe3e9" stroke-width="2" stroke-linecap="round"/>' +
+      '<circle r="2.3" fill="#d5dae1" stroke="' + CONT + '" stroke-width="1"/>';
+  }
+  function bandeiraSVG(sombra) {                        // a bandeira do Brasil (a sombra é a mesma forma, preta, pras dobras)
+    if (sombra) return '<rect x=".8" y=".8" width="32.4" height="21.4" rx="1.2" fill="#000"/>';
+    return '<rect x=".8" y=".8" width="32.4" height="21.4" rx="1.2" fill="#009c3b" stroke="' + CONT + '" stroke-width="1.6"/>' +
+      '<path d="M4.4 11.5L17 3.6L29.6 11.5L17 19.4Z" fill="#ffdf00"/>' +
+      '<circle cx="17" cy="11.5" r="5.4" fill="#002776"/>' +
+      '<path d="M11.8 10.6Q17 8.6 22.2 11.4" fill="none" stroke="#fff" stroke-width="1.2"/>' +
+      '<circle cx="15" cy="13.2" r=".45" fill="#fff"/><circle cx="18.4" cy="14.2" r=".45" fill="#fff"/><circle cx="16.6" cy="15.4" r=".4" fill="#fff"/><circle cx="19.6" cy="12.6" r=".4" fill="#fff"/>';
+  }
+
+  // SVG -> canvas, já na resolução em que vai aparecer
+  function carimbo(vb, miolo, escala) {
+    const w = Math.max(1, Math.ceil(vb[2] * escala)), h = Math.max(1, Math.ceil(vb[3] * escala));
+    return new Promise(res => {
+      const img = new Image();
+      img.onload = () => { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); res(c); };
+      img.onerror = () => res(null);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgPronto(vb, w, h, miolo));
+    });
+  }
+  async function prepararCarimbos() {
+    const eP = TAM_P * 1.12 * k * K, eM = TAM_MOTO * k * K, eB = sM * K;
+    const [ps, m, r, b, s] = await Promise.all([
+      Promise.all(NP ? CORES_PIPA.map(c => carimbo(PIPA_VB, pipaSVG(c), eP)) : []),
+      MOTO ? carimbo(MOTO_VB, motoSVG(), eM) : null, MOTO ? carimbo(RODA_VB, rodaSVG(), eM) : null,
+      bandeira ? carimbo(BAND_VB, bandeiraSVG(false), eB * 1.5) : null, bandeira ? carimbo(BAND_VB, bandeiraSVG(true), eB * 1.5) : null]);
+    if (ps.length && ps.every(Boolean)) carimbosPipa = ps;
+    if (m && r) { carimboMoto = m; carimboRoda = r; }
+    if (b && s) { carimboBandeira = b; carimboSombra = s; }
+  }
+
+  // ================================================================
+  //  pipas com rabiola (a linha desce pro morrinho, de onde soltam)
+  // ================================================================
+  const NC = 9;                                         // pontos da rabiola
+  function zonaAleatoria() {                            // escolhe uma zona pelo tamanho dela
+    const areas = zonasP.map(z => (z.x1 - z.x0) * (z.y1 - z.y0)), tot = areas.reduce((a, b) => a + b, 0);
+    let r = Math.random() * tot;
+    for (let i = 0; i < zonasP.length; i++) { r -= areas[i]; if (r <= 0) return zonasP[i]; }
+    return zonasP[0];
+  }
+  function novaPipa(i) {
+    const z = zonaAleatoria();
+    const p = { i, x: rnd(z.x0, z.x1), y: rnd(z.y0, z.y1), vx: 0, vy: 0, ang: 0, tam: TAM_P * k * rnd(.85, 1.1),
+                cor: i % CORES_PIPA.length, fase: rnd(0, 7), modo: 'voa', ate: 0, alvo: null, cauda: [] };
+    const ex = 22 * p.tam + 3 * k, et = 26 * p.tam + 3 * k, eb = 30 * p.tam + 3 * k;   // a pipa inteira sempre aparece
+    p.lim = { x0: RX + ex, x1: RR - ex, y0: RY + et, y1: RB - eb };
+    const L = 6.2 * p.tam;
+    for (let j = 0; j < NC; j++) p.cauda.push({ x: p.x, y: p.y + 26 * p.tam + j * L, px: p.x, py: p.y + 26 * p.tam + j * L });
+    novoAlvoPipa(p);
+    return p;
+  }
+  function novoAlvoPipa(p) {
+    const z = zonaAleatoria();
+    p.alvo = [rnd(z.x0, z.x1), rnd(z.y0, z.y1)];
+    p.modo = 'voa';
+  }
+  const noLocal = (p, lx, ly) => {                      // ponto da pipa (em unidades do desenho) na tela
+    const c = Math.cos(p.ang), s = Math.sin(p.ang);
+    return [p.x + (lx * c - ly * s) * p.tam, p.y + (lx * s + ly * c) * p.tam];
+  };
+  const difAng = (a, b) => { let d = (a - b) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
+
+  // as pipas vivem num relógio próprio (tb), que anda VEL vezes o normal
+  let grauT0 = -99, grauAte = -99, tb = 0;
+  function moverPipa(p, t, dt) {
+    const emGrau = t < grauAte, dv = dt * VEL;
+    let tx, ty;
+    if (emGrau) {                                      // grau: dão volta em cima da plaquinha
+      const a = (t - grauT0) * 2.4 + p.i * Math.PI * 2 / pipas.length;
+      tx = roda.cx + Math.cos(a) * roda.rx; ty = roda.cy + Math.sin(a) * roda.ry;
+      p.gr = true;
+    } else {
+      if (p.gr) { p.gr = false; novoAlvoPipa(p); }     // acabou o grau: volta a passear de onde está
+      if (p.modo === 'paira' && t > p.ate) novoAlvoPipa(p);
+      [tx, ty] = p.alvo;
+    }
+    const lim = p.lim;
+    tx = Math.min(lim.x1, Math.max(lim.x0, tx)); ty = Math.min(lim.y1, Math.max(lim.y0, ty));
+    const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy) || 1;
+    if (!emGrau && p.modo === 'voa' && d < 14 * k) { p.modo = 'paira'; p.ate = t + rnd(1.6, 4.5); }
+    const A = (emGrau ? 1700 : 240) * k * Math.min(1, d / (60 * k));
+    p.vx += dx / d * A * (emGrau ? dt : dv); p.vy += dy / d * A * (emGrau ? dt : dv);
+    if (p.modo === 'paira' && !emGrau) {               // parada no ar, o vento balança
+      p.vx += Math.sin(tb * 1.7 + p.fase) * 70 * k * dv; p.vy += Math.cos(tb * 1.3 + p.fase) * 50 * k * dv;
+    }
+    const amort = 1 - Math.min(1, (emGrau ? 2.4 * dt : 1.6 * dv)); p.vx *= amort; p.vy *= amort;
+    const parede = 30 * k, empurra = 1400 * k * dt;    // chegando perto da borda, um empurrão de volta
+    if (p.x < lim.x0 + parede) p.vx += empurra * Math.min(1, (lim.x0 + parede - p.x) / parede);
+    if (p.x > lim.x1 - parede) p.vx -= empurra * Math.min(1, (p.x - lim.x1 + parede) / parede);
+    if (p.y < lim.y0 + parede) p.vy += empurra * Math.min(1, (lim.y0 + parede - p.y) / parede);
+    if (p.y > lim.y1 - parede) p.vy -= empurra * Math.min(1, (p.y - lim.y1 + parede) / parede);
+    const vmax = (emGrau ? 420 : 120 * VEL) * k, v = Math.hypot(p.vx, p.vy);
+    if (v > vmax) { p.vx *= vmax / v; p.vy *= vmax / v; }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.x < lim.x0) { p.x = lim.x0; p.vx = Math.max(0, p.vx); } else if (p.x > lim.x1) { p.x = lim.x1; p.vx = Math.min(0, p.vx); }
+    if (p.y < lim.y0) { p.y = lim.y0; p.vy = Math.max(0, p.vy); } else if (p.y > lim.y1) { p.y = lim.y1; p.vy = Math.min(0, p.vy); }
+    const fx0 = X - 22 * p.tam, fx1 = X + W + 22 * p.tam, fy0 = Y - 30 * p.tam, fy1 = Y + H + 26 * p.tam;   // nunca na frente da câmera
+    if (p.x > fx0 && p.x < fx1 && p.y > fy0 && p.y < fy1) {
+      const saidas = [[p.y - fy0, 0], [fx1 - p.x, 1], [fy1 - p.y, 2], [p.x - fx0, 3]]
+        .filter(([, l]) => l === 0 ? fy0 >= lim.y0 : l === 1 ? fx1 <= lim.x1 : l === 2 ? fy1 <= lim.y1 : fx0 >= lim.x0).sort((a, c) => a[0] - c[0]);
+      const sai = saidas.length ? saidas[0][1] : 0;
+      if (sai === 0) { p.y = fy0; p.vy = Math.min(0, p.vy); } else if (sai === 1) { p.x = fx1; p.vx = Math.max(0, p.vx); }
+      else if (sai === 2) { p.y = fy1; p.vy = Math.max(0, p.vy); } else { p.x = fx0; p.vx = Math.min(0, p.vx); }
+    }
+    // inclina com o vento; no grau a ponta vai na frente, dando laçada
+    const alvoAng = emGrau ? Math.atan2(p.vy, p.vx) + Math.PI / 2
+                           : Math.max(-.5, Math.min(.5, p.vx / (140 * k) * .6)) + Math.sin(tb * 1.9 + p.fase) * .16;
+    p.ang += difAng(alvoAng, p.ang) * Math.min(1, dt * (emGrau ? 7 : 4));
+    // rabiola: corrente de pontos puxada pela ponta de baixo, com gravidade e o vento pra direita
+    const L = 6.2 * p.tam, c = p.cauda, [ax, ay] = noLocal(p, 0, 26);
+    c[0].x = c[0].px = ax; c[0].y = c[0].py = ay;
+    const g = 900 * k * dt * dt, w = 300 * k * dt * dt;
+    for (let j = 1; j < NC; j++) {
+      const s = c[j], vx = (s.x - s.px) * .94, vy = (s.y - s.py) * .94;
+      s.px = s.x; s.py = s.y; s.x += vx + w; s.y += vy + g;
+    }
+    for (let it = 0; it < 2; it++) for (let j = 1; j < NC; j++) {
+      const a = c[j - 1], b = c[j], ddx = b.x - a.x, ddy = b.y - a.y, dd = Math.hypot(ddx, ddy) || 1, e = (dd - L) / dd;
+      b.x -= ddx * e; b.y -= ddy * e;
+    }
+  }
+
+  function desenhaPipas(t) {
+    if (!carimbosPipa.length || !pipas.length) return;
+    // a linha: sai da pipa na direção do morrinho e some aos poucos
+    const trechos = [[], [], [], []];
+    for (const p of pipas) {
+      const [x0, y0] = noLocal(p, 0, 3), dx = ancoraLinha[0] - x0, dy = ancoraLinha[1] - y0, d = Math.hypot(dx, dy) || 1;
+      const L = Math.min(d, 110 * k) / 4, ux = dx / d, uy = dy / d;
+      const cai = i => Math.sin(Math.PI * i / 8) * 6 * k;   // a linha pesa um pouquinho pra baixo
+      for (let i = 0; i < 4; i++) trechos[i].push(x0 + ux * L * i, y0 + uy * L * i + cai(i), x0 + ux * L * (i + 1), y0 + uy * L * (i + 1) + cai(i + 1));
+    }
+    ctx.strokeStyle = '#f4efe2'; ctx.lineWidth = 1.1 * k; ctx.lineCap = 'round';
+    trechos.forEach((l, i) => {
+      ctx.globalAlpha = [.6, .4, .22, .08][i];
+      ctx.beginPath();
+      for (let j = 0; j < l.length; j += 4) { ctx.moveTo(l[j], l[j + 1]); ctx.lineTo(l[j + 2], l[j + 3]); }
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    // rabiola: fio + lacinhos coloridos, em lote por cor
+    const lacos = new Map(), fio = [];
+    for (const p of pipas) {
+      const c = p.cauda, pts = [];
+      for (let j = 0; j < NC; j++) {
+        let x = c[j].x, y = c[j].y;
+        if (j) {                                       // tremidinha do vento, maior na ponta
+          const a = c[j - 1], dx = x - a.x, dy = y - a.y, dd = Math.hypot(dx, dy) || 1, wq = Math.sin(t * 9 - j * .9 + p.fase) * (j / NC) * 2.6 * k;
+          x += -dy / dd * wq; y += dx / dd * wq;
+        }
+        pts.push(x, y);
+      }
+      fio.push(pts);
+      const cores = CORES_PIPA[p.cor];
+      for (let j = 1; j < NC; j++) {
+        const x = pts[j * 2], y = pts[j * 2 + 1], dx = x - pts[j * 2 - 2], dy = y - pts[j * 2 - 1], dd = Math.hypot(dx, dy) || 1;
+        const nx = -dy / dd, ny = dx / dd, tx = dx / dd, ty = dy / dd, a = 5.6 * p.tam * (1 - j / NC * .3), b = 2.4 * p.tam;
+        const cor = j % 3 === 2 ? '#fff' : cores[j % 2];
+        if (!lacos.has(cor)) lacos.set(cor, []);
+        lacos.get(cor).push(x, y, nx * a, ny * a, tx * b, ty * b);
+      }
+    }
+    ctx.strokeStyle = CONT; ctx.lineWidth = .8 * k; ctx.globalAlpha = .6;
+    ctx.beginPath();
+    for (const pts of fio) { ctx.moveTo(pts[0], pts[1]); for (let j = 2; j < pts.length; j += 2) ctx.lineTo(pts[j], pts[j + 1]); }
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineWidth = .6 * k; ctx.lineJoin = 'round';
+    for (const [cor, l] of lacos) {                    // lacinho = duas pontinhas saindo do fio
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      for (let j = 0; j < l.length; j += 6) {
+        const [x, y, nx, ny, tx, ty] = [l[j], l[j + 1], l[j + 2], l[j + 3], l[j + 4], l[j + 5]];
+        ctx.moveTo(x, y); ctx.lineTo(x + nx - tx, y + ny - ty); ctx.lineTo(x + nx + tx, y + ny + ty); ctx.closePath();
+        ctx.moveTo(x, y); ctx.lineTo(x - nx - tx, y - ny - ty); ctx.lineTo(x - nx + tx, y - ny + ty); ctx.closePath();
+      }
+      ctx.fill(); ctx.stroke();
+    }
+    // o corpo da pipa
+    for (const p of pipas) {
+      ctx.save();
+      ctx.translate(p.x, p.y); ctx.rotate(p.ang); ctx.scale(p.tam, p.tam);
+      ctx.drawImage(carimbosPipa[p.cor], PIPA_VB[0], PIPA_VB[1], PIPA_VB[2], PIPA_VB[3]);
+      ctx.restore();
+    }
+  }
+
+  // a bandeira tremulando no mastro: fatias da bandeira sobem e descem numa onda, com sombra nas dobras
+  function desenhaBandeira(t) {
+    if (!bandeira || !carimboBandeira) return;
+    const s = bandeira.s, N = 14, w = BAND_VB[2] * s, h = BAND_VB[3] * s, cw = carimboBandeira.width / N, ch = carimboBandeira.height;
+    for (let i = 0; i < N; i++) {
+      const u = (i + .5) / N, ph = t * 6.5 - u * 5.4, amp = 2.8 * s * u;
+      const dy = Math.sin(ph) * amp, sombra = Math.cos(ph) * u;
+      const x = bandeira.x + i * w / N - u * u * 1.2 * s, y = bandeira.y + dy + u * 1.4 * s;
+      ctx.drawImage(carimboBandeira, i * cw, 0, cw, ch, x, y, w / N + .7, h);
+      if (sombra < -.05) {
+        ctx.globalAlpha = -sombra * .34;
+        ctx.drawImage(carimboSombra, i * cw, 0, cw, ch, x, y, w / N + .7, h);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // ================================================================
+  //  o grau: ela passa empinando a moto
+  // ================================================================
+  const LT = Math.max(0, W - 2 * RAIO), LR = Math.max(0, H - 2 * RAIO), Q4 = Math.PI * RAIO / 2, PER = 2 * (LT + LR) + 4 * Q4;
+  // ponto do contorno de fora da câmera, andando no sentido horário a partir do canto de cima-esquerdo
+  function noContorno(s) {
+    const R = RAIO, segs = [LT, Q4, LR, Q4, LT, Q4, LR, Q4];
+    let i = 0;
+    while (i < 7 && s > segs[i]) { s -= segs[i]; i++; }
+    let a;
+    switch (i) {
+      case 0: return { x: X + R + s, y: Y, ang: 0, lado: 0 };
+      case 1: a = -Math.PI / 2 + s / R; return { x: X + W - R + Math.cos(a) * R, y: Y + R + Math.sin(a) * R, ang: a + Math.PI / 2, lado: 1 };
+      case 2: return { x: X + W, y: Y + R + s, ang: Math.PI / 2, lado: 2 };
+      case 3: a = s / R; return { x: X + W - R + Math.cos(a) * R, y: Y + H - R + Math.sin(a) * R, ang: a + Math.PI / 2, lado: 3 };
+      case 4: return { x: X + W - R - s, y: Y + H, ang: Math.PI, lado: 4 };
+      case 5: a = Math.PI / 2 + s / R; return { x: X + R + Math.cos(a) * R, y: Y + H - R + Math.sin(a) * R, ang: a + Math.PI / 2, lado: 5 };
+      case 6: return { x: X, y: Y + H - R - s, ang: -Math.PI / 2, lado: 6 };
+      default: a = Math.PI + s / R; return { x: X + R + Math.cos(a) * R, y: Y + R + Math.sin(a) * R, ang: a + Math.PI / 2, lado: 7 };
+    }
+  }
+  let moto = null;                                      // { x, y: onde está o pivô; px, py: o pivô no desenho; ang, roda, a, fase }
+  function mundoMoto(lx, ly) {                          // ponto da moto (em unidades do desenho) na tela
+    const m = moto, s = TAM_MOTO * k, c = Math.cos(m.ang), sn = Math.sin(m.ang), dx = (lx - m.px) * s, dy = (ly - m.py) * s;
+    return [m.x + dx * c - dy * sn, m.y + dx * sn + dy * c];
+  }
+  const pulo = xc => {                                  // pulinho por cima da plaquinha (e do caramelo, no solto)
+    let h = 0;
+    for (const o of obst) if (xc > o.x0 && xc < o.x1) h = Math.max(h, Math.sin(Math.PI * (xc - o.x0) / (o.x1 - o.x0)) * o.h);
+    return h;
+  };
+  function soltaMoto(t) {
+    if (!MOTO || !voo) return;
+    moto = { t0: t, fase: voo.tipo === 'volta' ? 'volta' : 'chao', a: 0, roda: 0, ang: 0, x: 0, y: 0, px: 0, py: 13, fum: 0, placa: false, latiu: false };
+    atualizaMoto(t, 0);
+    if (voo.tipo === 'volta' || voo.puf) { const [x, y] = mundoMoto(26, -30); puf(x, y); }
+  }
+  function atualizaMoto(t, dt) {
+    const m = moto, s = TAM_MOTO * k, tl = t - m.t0;
+    if (m.fase === 'chao') {                           // em cima da borda, empinando
+      const vel = (voo.xJ - voo.x0) / voo.dur, xr = voo.x0 + vel * tl, xc = xr + 26 * s, h = pulo(xc);
+      m.x = xr; m.y = Y - h; m.px = 0; m.py = 13;
+      m.ang = -(.36 + .05 * Math.sin(t * 11)) * Math.min(1, tl / .25) - h / (140 * k);
+      m.roda += vel * dt / (13 * s);
+      m.a = voo.puf ? Math.min(1, tl / .15) : 1;
+      if (placa && !m.placa && xc > placa.cx - placa.TW * .3) { m.placa = true; brilhoPlaca(t); }
+      if (xr >= voo.xJ) {                              // salta dando um mortal (por cima do caramelo)
+        const [wx, wy] = mundoMoto(26, -24);
+        Object.assign(m, { fase: 'ar', ta: t, x: wx, y: wy, px: 26, py: -24, vx: vel * .8, vy: -330 * k, vr: -Math.PI * 2 / .78, vRoda: vel });
+        latir(t);
+      }
+    } else if (m.fase === 'ar') {
+      const ta = t - m.ta;
+      m.vy += 950 * k * dt; m.x += m.vx * dt; m.y += m.vy * dt;
+      if (ta < .78) m.ang += m.vr * dt; else m.ang += difAng(-.25, m.ang) * Math.min(1, dt * 8);
+      m.roda += m.vRoda * dt / (13 * s);
+      m.a = Math.max(0, Math.min(1, (1.02 - ta) / .14));
+      if (ta >= 1.02) { puf(m.x, m.y); moto = null; return; }
+    } else {                                           // solto: globo da morte, uma volta inteira grudada na borda
+      const u = Math.min(1, tl / voo.dur), pt = noContorno((voo.s0 + u * PER) % PER);
+      let h = 0;
+      if (pt.lado === 0) {
+        const xc = pt.x + 26 * s;
+        h = pulo(xc);
+        if (placa && !m.placa && xc > placa.cx - placa.TW * .3 && xc < placa.cx + placa.TW) { m.placa = true; brilhoPlaca(t); }
+        if (cao && !m.latiu && xc > cao.x - 70 * k && xc < cao.x + 40 * k) { m.latiu = true; latir(t); }
+      }
+      m.x = pt.x + Math.sin(pt.ang) * h; m.y = pt.y - Math.cos(pt.ang) * h; m.px = 0; m.py = 13;
+      m.ang = pt.ang - (.24 + .04 * Math.sin(t * 11)) - h / (160 * k);
+      m.roda += PER / voo.dur * dt / (13 * s);
+      m.a = Math.max(0, Math.min(1, tl / .15, (voo.dur - tl) / .15));
+      if (u >= 1) { const [x, y] = mundoMoto(26, -30); puf(x, y); moto = null; return; }
+    }
+    // fumaça do escapamento e poeirinha do pneu
+    m.fum -= dt;
+    const c = Math.cos(m.ang), sn = Math.sin(m.ang);
+    while (m.fum <= 0) {
+      m.fum += .028;
+      const [ex, ey] = mundoMoto(-19, -15.5), v = rnd(40, 90) * k;
+      fumaca(ex, ey, -c * v + rnd(-12, 12) * k, -sn * v - rnd(10, 30) * k, rnd(5, 9) * k, escolhe(FUMACA), rnd(.5, .9));
+    }
+    if (m.fase !== 'ar' && Math.random() < dt * 16) { const [px, py] = mundoMoto(-4, 13); po(px, py, escolhe(['#c9b89a', '#e6dccb', '#fff'])); }
+  }
+  function desenhaMoto() {
+    if (!moto || !carimboMoto || moto.a <= 0) return;
+    const m = moto, s = TAM_MOTO * k;
+    ctx.save();
+    ctx.globalAlpha = m.a;
+    ctx.translate(m.x, m.y); ctx.rotate(m.ang); ctx.scale(s, s); ctx.translate(-m.px, -m.py);
+    for (const wx of [0, 52]) {
+      ctx.save(); ctx.translate(wx, 0); ctx.rotate(m.roda);
+      ctx.drawImage(carimboRoda, RODA_VB[0], RODA_VB[1], RODA_VB[2], RODA_VB[3]);
+      ctx.restore();
+    }
+    ctx.drawImage(carimboMoto, MOTO_VB[0], MOTO_VB[1], MOTO_VB[2], MOTO_VB[3]);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // ================================================================
+  //  partículas (canvas): faíscas, poeirinha, fumaça, confete verde-amarelo, notinhas
+  // ================================================================
+  const FUMACA = ['#e3e6ea', '#c3c8cf', '#f2f3f5', '#a9b0b9'];
+  const CONFETE = [COR.verde, COR.amarelo, COR.azul, '#fff', COR.verdeClaro];
+  const parts = [], MAXP = 380;
+  function faisca(x, y, tam, vida, cor) { if (parts.length < MAXP) parts.push({ tipo: 'faisca', x, y, vx: rnd(-10, 10) * k, vy: rnd(-14, 6) * k, tam, vida, idade: 0, rot: rnd(0, 1.5), cor }); }
+  function po(x, y, cor) { if (parts.length < MAXP) parts.push({ tipo: 'po', x, y, vx: rnd(-18, 8) * k, vy: rnd(-20, 4) * k, vida: rnd(.4, .8), idade: 0, cor }); }
+  function fumaca(x, y, vx, vy, r, cor, vida) { if (parts.length < MAXP) parts.push({ tipo: 'fumaca', x, y, vx, vy, r, cor, vida, idade: 0 }); }
+  function confete(x, y, forca) {
+    if (parts.length >= MAXP) return;
+    const a = rnd(-Math.PI * .9, -Math.PI * .1), v = rnd(90, 230) * k * (forca || 1);
+    parts.push({ tipo: 'confete', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: rnd(4, 6.5) * k, h: rnd(2.4, 3.6) * k, rot: rnd(0, 6), vr: rnd(-9, 9), fase: rnd(0, 7), vida: rnd(1.2, 1.9), idade: 0, cor: escolhe(CONFETE) });
+  }
+  function nota(x, y) { if (parts.length < MAXP) parts.push({ tipo: 'nota', x, y, vx: rnd(-8, 14) * k, vy: -rnd(26, 42) * k, fase: rnd(0, 7), vida: rnd(1.5, 2.3), idade: 0, cor: escolhe([COR.amarelo, COR.verdeClaro, '#8fb0ff', '#fff']), dupla: Math.random() < .35, tam: rnd(.8, 1.05) * k }); }
+  function puf(x, y) {
+    for (let i = 0; i < 16; i++) {
+      const a = rnd(0, Math.PI * 2), v = rnd(30, 110) * k;
+      fumaca(x + Math.cos(a) * 6 * k, y + Math.sin(a) * 6 * k, Math.cos(a) * v, Math.sin(a) * v * .8, rnd(10, 20) * k, escolhe(FUMACA), rnd(.7, 1.1));
+    }
+    for (let i = 0; i < 16; i++) confete(x + rnd(-10, 10) * k, y + rnd(-10, 10) * k, .8);
+    for (let i = 0; i < 8; i++) faisca(x + rnd(-26, 26) * k, y + rnd(-22, 22) * k, rnd(4, 7) * k, rnd(.5, .9), escolhe([COR.amareloClaro, '#fff', COR.amarelo]));
+  }
+  function desenhaBrilho(x, y, s, rt) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rt);
+    ctx.beginPath();
+    ctx.moveTo(0, -s); ctx.quadraticCurveTo(s * .18, -s * .18, s, 0); ctx.quadraticCurveTo(s * .18, s * .18, 0, s);
+    ctx.quadraticCurveTo(-s * .18, s * .18, -s, 0); ctx.quadraticCurveTo(-s * .18, -s * .18, 0, -s);
+    ctx.fill(); ctx.restore();
+  }
+  function desenhaNota(p, a) {                          // colcheia (ou duas) com contorno escuro
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.sin(p.fase + p.idade * 3) * .25); ctx.scale(p.tam, p.tam);
+    ctx.beginPath();
+    if (p.dupla) {
+      ctx.ellipse(-5, 1, 4, 2.9, -.35, 0, 7); ctx.ellipse(5, -1, 4, 2.9, -.35, 0, 7);
+      ctx.rect(-2.2, -14, 1.7, 15); ctx.rect(7.8, -16, 1.7, 15); ctx.moveTo(-2.2, -14); ctx.lineTo(9.5, -16); ctx.lineTo(9.5, -12.4); ctx.lineTo(-2.2, -10.4); ctx.closePath();
+    } else {
+      ctx.ellipse(0, 0, 4.2, 3, -.35, 0, 7); ctx.rect(2.8, -15, 1.7, 15);
+      ctx.moveTo(4.4, -15); ctx.quadraticCurveTo(10, -12, 8.6, -6); ctx.quadraticCurveTo(8.4, -10, 4.4, -10.6); ctx.closePath();
+    }
+    ctx.globalAlpha = a; ctx.lineWidth = 2.6; ctx.strokeStyle = CONT; ctx.lineJoin = 'round';
+    ctx.stroke(); ctx.fillStyle = p.cor; ctx.fill();
+    ctx.restore();
+  }
+  function desenhaParticulas(t, dt) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.idade += dt;
+      if (p.idade >= p.vida) { parts.splice(i, 1); continue; }
+      const u = p.idade / p.vida;
+      let a = u > .7 ? (1 - u) / .3 : 1;
+      a *= Math.max(0, Math.min(1, Math.min(p.x - RX, RR - p.x, p.y - RY, RB - p.y) / (16 * k)));   // some antes da borda da fonte
+      if (p.tipo === 'confete') {                      // papel picado: sobe, cai rodopiando
+        p.vy += 420 * k * dt; p.vx *= 1 - Math.min(1, 1.6 * dt); p.vy *= 1 - Math.min(1, 1.2 * dt);
+        p.x += (p.vx + Math.sin(t * 5 + p.fase) * 18 * k) * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+        if (a <= 0) continue;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(t * 9 + p.fase));
+        ctx.globalAlpha = a; ctx.fillStyle = p.cor; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+        continue;
+      }
+      if (a <= 0) continue;
+      if (p.tipo === 'faisca') {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        ctx.globalAlpha = a; ctx.fillStyle = p.cor;
+        desenhaBrilho(p.x, p.y, p.tam * Math.sin(Math.min(1, u * 1.4) * Math.PI), p.rot + u * 1.4);
+      } else if (p.tipo === 'po') {
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        ctx.globalAlpha = a * .8; ctx.fillStyle = p.cor;
+        ctx.beginPath(); ctx.arc(p.x, p.y, (1.2 + u * 1.6) * k, 0, 7); ctx.fill();
+      } else if (p.tipo === 'fumaca') {
+        p.vx *= 1 - Math.min(1, 3 * dt); p.vy = p.vy * (1 - Math.min(1, 3 * dt)) - 14 * k * dt;
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        const r = p.r * (.55 + u * 1.1), g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        g.addColorStop(0, p.cor); g.addColorStop(.5, p.cor); g.addColorStop(1, 'rgba(200,205,212,0)');
+        ctx.globalAlpha = a * .55 * (1 - u * .5); ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
+      } else if (p.tipo === 'nota') {
+        p.x += (p.vx + Math.sin(t * 3 + p.fase) * 16 * k) * dt; p.y += p.vy * dt;
+        desenhaNota(p, a * Math.min(1, u * 6));
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ================================================================
+  //  balõezinhos (gíria carioca e o latido do caramelo)
+  // ================================================================
+  let balaoEl = null, tiraBalao = 0, ultimaGiria = '';
+  function balao(texto, ax, ay, lado, dur) {
+    if (balaoEl) balaoEl.remove();
+    clearTimeout(tiraBalao);
+    const fs = 17 * k;
+    medidor.font = fs + 'px ' + FAMILIA;
+    const tw = medidor.measureText(texto).width, bw = tw + 24 * k, bh = fs * 1.35 + 8 * k;
+    let cx = lado === 'esq' ? ax - bw / 2 + 14 * k : lado === 'dir' ? ax + bw / 2 - 14 * k : ax, cy = ay - bh / 2 - 16 * k;
+    cx = Math.min(RR - bw / 2 - 4 * k, Math.max(RX + bw / 2 + 4 * k, cx));
+    cy = Math.min(RB - bh / 2 - 4 * k, Math.max(RY + bh / 2 + 4 * k, cy));
+    if (cx + bw / 2 > X && cx - bw / 2 < X + W && cy + bh / 2 > Y && cy - bh / 2 < Y + H) cy = Math.max(RY + bh / 2 + 2 * k, Y - bh / 2 - 8 * k);   // nunca em cima da câmera
+    const x0 = cx - bw / 2, y0 = cy - bh / 2, y1 = cy + bh / 2;
+    const bx = Math.min(x0 + bw - bh / 2 - 2 * k, Math.max(x0 + bh / 2 + 2 * k, ax)), ty = Math.max(ay, y1 + 6 * k);
+    const cauda = 'M' + f(bx - 6 * k) + ' ' + f(y1 - 2.5 * k) + 'L' + f(ax + (ax - bx) * .2) + ' ' + f(ty) + 'L' + f(bx + 6 * k) + ' ' + f(y1 - 2.5 * k) + 'Z';
+    const caixa = 'x="' + f(x0) + '" y="' + f(y0) + '" width="' + f(bw) + '" height="' + f(bh) + '" rx="' + f(bh / 2) + '"';
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'balao');
+    g.innerHTML = '<rect ' + caixa + ' transform="translate(' + f(2 * k) + ' ' + f(3 * k) + ')" fill="rgba(0,0,0,.3)"/>' +
+      '<path d="' + cauda + '" fill="#fff" stroke="' + CONT + '" stroke-width="' + f(2.4 * k) + '" stroke-linejoin="round"/>' +
+      '<rect ' + caixa + ' fill="#fff" stroke="' + CONT + '" stroke-width="' + f(2.4 * k) + '"/>' +
+      '<path d="' + cauda + '" fill="#fff"/>' +
+      '<text x="' + f(cx + 1.3 * k) + '" y="' + f(cy + fs * .36 + 1.3 * k) + '" text-anchor="middle" font-family=\'' + FAMILIA.replace(/"/g, '') + '\' font-size="' + f(fs) + '" fill="' + COR.verde + '"></text>' +
+      '<text x="' + f(cx) + '" y="' + f(cy + fs * .36) + '" text-anchor="middle" font-family=\'' + FAMILIA.replace(/"/g, '') + '\' font-size="' + f(fs) + '" fill="' + CONT + '"></text>';
+    for (const tx of g.querySelectorAll('text')) tx.textContent = texto;
+    cena.appendChild(g);
+    balaoEl = g;
+    if (g.animate) g.animate([{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(1.12)', opacity: 1, offset: .6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 280, easing: 'ease-out' });
+    tiraBalao = setTimeout(() => {
+      const sai = () => { if (balaoEl === g) balaoEl = null; g.remove(); };
+      if (g.animate) g.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.3)', opacity: 0 }], { duration: 220, easing: 'ease-in' }).onfinish = sai;
+      else sai();
+    }, (dur || 2.6) * 1000);
+  }
+  function giria() {
+    if (!GIRIAS.length) return;
+    const ancoras = [];
+    if (cao) ancoras.push([cao.x - 6 * k, cao.topo + 10 * k, 'esq']);
+    if (placa) ancoras.push([placa.cx + rnd(-.25, .25) * placa.TW, placa.cy - placa.TH / 2 - 2 * k, 'cima']);
+    if (som && !SOLTA) ancoras.push([som.x + 8 * k, som.topo + 6 * k, 'dir']);
+    if (!ancoras.length) ancoras.push([X + W / 2, Y - 4 * k, 'cima']);
+    let txt = escolhe(GIRIAS);
+    for (let i = 0; i < 5 && GIRIAS.length > 1 && txt === ultimaGiria; i++) txt = escolhe(GIRIAS);
+    ultimaGiria = txt;
+    const a = escolhe(ancoras);
+    balao(txt, a[0], a[1], a[2]);
+  }
+
+  // ================================================================
+  //  grau: a moto passa, a plaquinha pula, confete, o caramelo late, as pipas rodam
+  // ================================================================
+  let tiraGrau = 0, tiraLate = 0;
+  function brilhoPlaca(t) {
+    if (placaEl && placaEl.animate) {
+      placaEl.animate([
+        { transform: 'scale(1) rotate(0deg)' }, { transform: 'scale(1.2) rotate(-4deg)', offset: .25 },
+        { transform: 'scale(.95) rotate(2deg)', offset: .5 }, { transform: 'scale(1.05) rotate(-1deg)', offset: .75 },
+        { transform: 'scale(1) rotate(0deg)' },
+      ], { duration: 850, easing: 'ease-out' });
+    }
+    if (!placa) return;
+    for (let i = 0; i < 26; i++) confete(placa.cx + rnd(-.45, .45) * placa.TW, placa.cy - placa.TH * .3);
+    for (let i = 0; i < 8; i++) faisca(placa.cx + rnd(-.5, .5) * placa.TW, placa.cy + rnd(-.8, .5) * placa.TH, rnd(4, 7.5) * k, rnd(.5, 1), escolhe([COR.amareloClaro, '#fff', COR.amarelo]));
+  }
+  function latir() {
+    if (!caoEl) return;
+    caoEl.classList.add('late');
+    clearTimeout(tiraLate);
+    tiraLate = setTimeout(() => caoEl.classList.remove('late'), 900);
+    balao('AU AU!', cao.x - 6 * k, cao.topo + 10 * k, 'esq', 1.4);
+  }
+  function grau(t) {
+    grauT0 = t; grauAte = t + 3.8;
+    cena.classList.add('grau');
+    clearTimeout(tiraGrau);
+    tiraGrau = setTimeout(() => cena.classList.remove('grau'), 3800);
+    const cx = placa ? placa.cx : X + W / 2;
+    for (const el of cena.querySelectorAll('.pop')) {  // tudo pula na batida, em onda a partir do nome
+      const d = Math.abs(el.dataset.x - cx) / W;
+      if (el.animate) el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)', offset: .35 }, { transform: 'scale(.95)', offset: .7 }, { transform: 'scale(1)' }],
+        { duration: 560, delay: 120 + d * 650, easing: 'ease-out' });
+    }
+    for (const fl of flores) for (let i = 0; i < 4; i++) faisca(fl.x + rnd(-1, 1) * fl.r, fl.y + rnd(-1, 1) * fl.r, rnd(4, 7) * k, rnd(.6, 1.1), escolhe([COR.amareloClaro, '#fff', COR.verdeClaro]));
+    if (MOTO && voo) soltaMoto(t);
+    else { brilhoPlaca(t); latir(); }
+  }
+
+  // ================================================================
+  //  encaixe na janela / fonte do OBS
+  // ================================================================
+  let K = 1;
+  function ajustar() {
+    let s = Math.min(innerWidth / SW, innerHeight / SH);
+    let ox = (innerWidth - SW * s) / 2, oy = (innerHeight - SH * s) / 2;
+    if (zoom) {                                        // prévia: só a moldura, bem de perto
+      s = Math.min(innerWidth / RW, innerHeight / RH);
+      ox = (innerWidth - RW * s) / 2 - RX * s; oy = (innerHeight - RH * s) / 2 - RY * s;
+    }
+    palco.style.transform = 'translate(' + ox + 'px,' + oy + 'px) scale(' + s + ')';
+    K = s * (window.devicePixelRatio || 1);
+    canvas.width = Math.max(1, Math.round(RW * K)); canvas.height = Math.max(1, Math.round(RH * K));
+    prepararCarimbos();
+  }
+
+  // ================================================================
+  //  loop
+  // ================================================================
+  let last = 0, proxGrau = 0, proxNota = 0, proxFaisca = 0, proxGiria = 0;
+  function frame(ms) {
+    const t = ms / 1000, dt = Math.min(.05, Math.max(0, t - last));
+    last = t;
+    if (GRAU > 0 && t >= proxGrau) { grau(t); proxGrau = t + GRAU; }
+    if (GIRIAS.length && t >= proxGiria) {             // balãozinho de gíria (fora do grau, que já tem o latido)
+      if (t > grauAte + .5 && !moto) giria();
+      proxGiria = t + (t > grauAte + .5 && !moto ? C.giriasCada * rnd(.75, 1.25) : 2);
+    }
+    if (som && t >= proxNota) {                        // notinhas saindo da caixa de som
+      nota(som.x + rnd(-10, 10) * som.s, som.yb - rnd(40, 64) * som.s);
+      proxNota = t + (t < grauAte ? rnd(.12, .25) : rnd(.7, 1.3));
+    }
+    if (t >= proxFaisca && flores.length) {            // brilhinho de vez em quando na plaquinha, no morrinho ou no caramelo
+      const fl = escolhe(flores);
+      faisca(fl.x + rnd(-.8, .8) * fl.r, fl.y + rnd(-.8, .8) * fl.r, rnd(4, 6.5) * k, rnd(.5, .8), escolhe([COR.amareloClaro, '#fff']));
+      proxFaisca = t + rnd(1, 2.4);
+    }
+    tb += dt * VEL;
+    for (const p of pipas) moverPipa(p, t, dt);
+    if (moto) atualizaMoto(t, dt);
+
+    ctx.setTransform(K, 0, 0, K, -RX * K, -RY * K);
+    ctx.clearRect(RX, RY, RW, RH);
+    desenhaBandeira(t);
+    desenhaPipas(t);
+    desenhaParticulas(t, dt);
+    desenhaMoto();
+    requestAnimationFrame(frame);
+  }
+
+  function comecar() {
+    if (comecou) return;
+    comecou = true;
+    montar();
+    ajustar();
+    addEventListener('resize', ajustar);
+    const t = performance.now() / 1000;
+    last = t; proxGrau = t + 3; proxNota = t + .5; proxFaisca = t + 1; proxGiria = t + 7;
+    addEventListener('pointerdown', () => {            // clique (ou "Interagir" no OBS) = grau agora
+      const now = performance.now() / 1000;
+      if (now - grauT0 > 1.2 && !moto) { grau(now); if (GRAU > 0) proxGrau = now + GRAU; }
+    });
+    requestAnimationFrame(frame);
+  }
+  Promise.race([document.fonts.load('25px "' + C.fonte + '"', TEXTO_NOME || 'K'), new Promise(r => setTimeout(r, 3000))]).then(comecar, comecar);
+})();
+</script>
+</body>
+</html>
